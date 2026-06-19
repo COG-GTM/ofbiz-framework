@@ -99,6 +99,10 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation 'org.mockito:mockito-core:5.23.0'
     testImplementation 'org.jmockit:jmockit:1.50'
+    // Cucumber BDD harness for the order-flow parity tests (see applications/order/src/test).
+    // Driven programmatically from a JUnit 5 test so it is independent of the JUnit Platform engine version.
+    testImplementation 'io.cucumber:cucumber-java:7.18.1'
+    testImplementation 'io.cucumber:cucumber-core:7.18.1'
 
     runtimeOnly 'javax.xml.soap:javax.xml.soap-api:1.4.0'
     runtimeOnly 'net.sf.barcode4j:barcode4j-fop-ext:2.1'
