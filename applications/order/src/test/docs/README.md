@@ -12,6 +12,10 @@ fire automatically, and a stakeholder review checklist.
 
 ## Phase 2 - Cucumber (BDD) + JUnit test harness
 
+See [`CUCUMBER_JUNIT_HARNESS.md`](CUCUMBER_JUNIT_HARNESS.md) for the full harness documentation
+(architecture, the step-definition vocabulary, the six scenarios, how to run, and how to add new
+scenarios).
+
 Located under `applications/order/src/test`:
 
 - **Feature files** (`src/test/resources/features/order/*.feature`) - six representative scenarios:
