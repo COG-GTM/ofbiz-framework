@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.ofbiz.base.util.Debug;
+import org.apache.ofbiz.base.util.UtilFormatOut;
 import org.apache.ofbiz.base.util.UtilGenerics;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.entity.Delegator;
@@ -35,7 +36,6 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.condition.EntityCondition;
 import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
-import org.apache.ofbiz.party.party.PartyHelper;
 
 public class HumanResEvents {
     private static final String MODULE = HumanResEvents.class.getName();
@@ -104,7 +104,7 @@ public class HumanResEvents {
                 if (UtilValidate.isNotEmpty(emlpfillCtxs)) {
                     for (GenericValue emlpfillCtx : emlpfillCtxs) {
                         String memberId = emlpfillCtx.getString("partyId");
-                        title = PartyHelper.getPartyName(delegator, memberId, false);
+                        title = getPartyName(delegator, memberId);
                         Map<String, Object> josonMap = new HashMap<>();
                         Map<String, Object> dataMap = new HashMap<>();
                         Map<String, Object> dataAttrMap = new HashMap<>();
@@ -157,7 +157,7 @@ public class HumanResEvents {
                     Map<String, Object> dataAttrMap = new HashMap<>();
                     Map<String, Object> attrMap = new HashMap<>();
                     catId = childOfCom.getString("partyIdTo");
-                    title = PartyHelper.getPartyName(delegator, catId, false);
+                    title = getPartyName(delegator, catId);
                     josonMap.put("title", title);
                     //Check child existing
                     List<GenericValue> childOfSubComs = EntityQuery.use(delegator).from("PartyRelationship")
@@ -241,5 +241,40 @@ public class HumanResEvents {
             throw new GenericEntityException(e);
         }
         return resultList;
+    }
+
+    /**
+     * Resolves a party's formatted display name without a compile-time dependency on the party component.
+     *
+     * <p>Behaviour mirrors {@code PartyHelper.getPartyName(delegator, partyId, false)}: it reads the
+     * {@code PartyNameView} datamodel view (cached) and formats the person/group name with the
+     * first-name-first ordering, falling back to the raw {@code partyId} when no party is found.
+     * The remaining coupling is to the shared {@code applications/datamodel} component, not to party code.</p>
+     *
+     * @param delegator the delegator used to query the datamodel
+     * @param partyId the party identifier to resolve
+     * @return the formatted party name, or {@code partyId} when the party cannot be found
+     */
+    private static String getPartyName(Delegator delegator, String partyId) {
+        GenericValue partyObject = null;
+        try {
+            partyObject = EntityQuery.use(delegator).from("PartyNameView")
+                    .where("partyId", partyId)
+                    .cache()
+                    .queryOne();
+        } catch (GenericEntityException e) {
+            Debug.logError(e, "Error finding PartyNameView in getPartyName", MODULE);
+        }
+        if (partyObject == null) {
+            return partyId;
+        }
+        StringBuilder result = new StringBuilder();
+        result.append(UtilFormatOut.ifNotEmpty(partyObject.getString("firstName"), "", " "));
+        result.append(UtilFormatOut.ifNotEmpty(partyObject.getString("middleName"), "", " "));
+        result.append(UtilFormatOut.checkNull(partyObject.getString("lastName")));
+        if (partyObject.get("groupName") != null) {
+            result.append(partyObject.getString("groupName"));
+        }
+        return result.toString();
     }
 }
