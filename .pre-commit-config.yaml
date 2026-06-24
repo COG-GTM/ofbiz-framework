@@ -14,10 +14,14 @@
 # limitations under the License.
 
 repos:
-- repo: https://github.com/gherynos/pre-commit-java
-  rev: v0.2.4
+- repo: local
   hooks:
-  - id: Checkstyle
+  - id: checkstyle
+    name: Checkstyle (OFBiz gradle)
+    entry: ./gradlew checkstyleMain
+    language: system
+    types: [java]
+    pass_filenames: false
 - repo: https://github.com/gitleaks/gitleaks
   rev: v8.16.3
   hooks:
@@ -25,7 +29,7 @@ repos:
 - repo: https://github.com/jumanjihouse/pre-commit-hooks
   rev: 3.0.0
   hooks:
-  - id: RuboCop
+  - id: rubocop
   - id: shellcheck
 - repo: https://github.com/pre-commit/mirrors-eslint
   rev: v8.38.0
