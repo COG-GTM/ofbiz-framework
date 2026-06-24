@@ -38,7 +38,6 @@ import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
-import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -493,6 +492,32 @@ public class BOMServices {
     // ---------------------------------------------
     // Service for the Product (Shipment) component
     //
+
+    /**
+     * Returns the partyId of the order's PLACING_CUSTOMER role, or {@code null} if there is none
+     * or the party has neither a Person nor a PartyGroup record. This is a manufacturing-local
+     * replacement for {@code OrderReadHelper.getPlacingParty()} that avoids a compile-time
+     * dependency on the order component, relying only on shared datamodel entities.
+     */
+    private static String getOrderPlacingPartyId(Delegator delegator, String orderId) {
+        try {
+            GenericValue orderRole = EntityQuery.use(delegator).from("OrderRole")
+                    .where("orderId", orderId, "roleTypeId", "PLACING_CUSTOMER").queryFirst();
+            if (orderRole == null) {
+                return null;
+            }
+            String partyId = orderRole.getString("partyId");
+            GenericValue party = EntityQuery.use(delegator).from("Person").where("partyId", partyId).queryOne();
+            if (party == null) {
+                party = EntityQuery.use(delegator).from("PartyGroup").where("partyId", partyId).queryOne();
+            }
+            return party != null ? partyId : null;
+        } catch (GenericEntityException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
+
     public static Map<String, Object> createShipmentPackages(DispatchContext dctx, Map<String, ? extends Object> context) {
         Map<String, Object> result = new HashMap<>();
         Delegator delegator = dctx.getDelegator();
@@ -516,7 +541,7 @@ public class BOMServices {
         } catch (GenericEntityException gee) {
             return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingBomErrorLoadingShipmentItems", locale));
         }
-        Map<String, Object> orderReadHelpers = new HashMap<>();
+        Map<String, String> orderPlacingPartyIds = new HashMap<>();
         Map<String, Object> partyOrderShipments = new HashMap<>();
         for (GenericValue shipmentItem : shipmentItems) {
             // Get the OrderShipments
@@ -529,16 +554,13 @@ public class BOMServices {
             } catch (GenericEntityException e) {
                 return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
             }
-            if (orderShipment != null && !orderReadHelpers.containsKey(orderShipment.getString("orderId"))) {
-                orderReadHelpers.put(orderShipment.getString("orderId"), new OrderReadHelper(delegator, orderShipment.getString("orderId")));
-            }
-            OrderReadHelper orderReadHelper = null;
             if (orderShipment != null) {
-                orderReadHelper = (OrderReadHelper) orderReadHelpers.get(orderShipment.getString("orderId"));
-            }
-            if (orderReadHelper != null) {
-                Map<String, Object> orderShipmentReadMap = UtilMisc.toMap("orderShipment", orderShipment, "orderReadHelper", orderReadHelper);
-                String partyId = (orderReadHelper.getPlacingParty() != null ? orderReadHelper.getPlacingParty().getString("partyId") : null);
+                String orderId = orderShipment.getString("orderId");
+                if (!orderPlacingPartyIds.containsKey(orderId)) {
+                    orderPlacingPartyIds.put(orderId, getOrderPlacingPartyId(delegator, orderId));
+                }
+                Map<String, Object> orderShipmentReadMap = UtilMisc.toMap("orderShipment", orderShipment);
+                String partyId = orderPlacingPartyIds.get(orderId);
                 // FIXME: is it the customer?
                 if (partyId != null) {
                     if (!partyOrderShipments.containsKey(partyId)) {
@@ -557,8 +579,14 @@ public class BOMServices {
             for (Map<String, Object> stringObjectMap : orderShipmentReadMapList) {
                 Map<String, Object> orderShipmentReadMap = UtilGenerics.cast(stringObjectMap);
                 GenericValue orderShipment = (GenericValue) orderShipmentReadMap.get("orderShipment");
-                OrderReadHelper orderReadHelper = (OrderReadHelper) orderShipmentReadMap.get("orderReadHelper");
-                GenericValue orderItem = orderReadHelper.getOrderItem(orderShipment.getString("orderItemSeqId"));
+                GenericValue orderItem = null;
+                try {
+                    orderItem = EntityQuery.use(delegator).from("OrderItem")
+                            .where("orderId", orderShipment.getString("orderId"),
+                                    "orderItemSeqId", orderShipment.getString("orderItemSeqId")).queryOne();
+                } catch (GenericEntityException e) {
+                    return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
+                }
                 // getProductsInPackages
                 Map<String, Object> serviceContext = new HashMap<>();
                 serviceContext.put("productId", orderItem.getString("productId"));
@@ -598,7 +626,6 @@ public class BOMServices {
             for (Map<String, Object> objectMap : orderShipmentReadMapList) {
                 Map<String, Object> orderShipmentReadMap = UtilGenerics.cast(objectMap);
                 GenericValue orderShipment = (GenericValue) orderShipmentReadMap.get("orderShipment");
-                OrderReadHelper orderReadHelper = (OrderReadHelper) orderShipmentReadMap.get("orderReadHelper");
                 List<BOMNode> productsInPackages = UtilGenerics.cast(orderShipmentReadMap.get("productsInPackages"));
                 if (productsInPackages != null) {
                     // there are subcomponents:
@@ -632,9 +659,11 @@ public class BOMServices {
                     // this is a single package shipment item
                     Map<String, Object> boxTypeContentMap = new HashMap<>();
                     boxTypeContentMap.put("content", orderShipmentReadMap);
-                    GenericValue orderItem = orderReadHelper.getOrderItem(orderShipment.getString("orderItemSeqId"));
                     GenericValue product = null;
                     try {
+                        GenericValue orderItem = EntityQuery.use(delegator).from("OrderItem")
+                                .where("orderId", orderShipment.getString("orderId"),
+                                        "orderItemSeqId", orderShipment.getString("orderItemSeqId")).queryOne();
                         product = orderItem.getRelatedOne("Product", false);
                     } catch (GenericEntityException e) {
                         return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
@@ -672,7 +701,6 @@ public class BOMServices {
                 for (Map<String, Object> stringObjectMap : contentList) {
                     Map<String, Object> contentMap = UtilGenerics.cast(stringObjectMap);
                     Map<String, Object> content = UtilGenerics.cast(contentMap.get("content"));
-                    OrderReadHelper orderReadHelper = (OrderReadHelper) content.get("orderReadHelper");
                     List<BOMNode> productsInPackages = UtilGenerics.cast(content.get("productsInPackages"));
                     GenericValue orderShipment = (GenericValue) content.get("orderShipment");
 
@@ -687,8 +715,10 @@ public class BOMServices {
                         quantity = component.getQuantity();
                     } else {
                         // single package
-                        GenericValue orderItem = orderReadHelper.getOrderItem(orderShipment.getString("orderItemSeqId"));
                         try {
+                            GenericValue orderItem = EntityQuery.use(delegator).from("OrderItem")
+                                    .where("orderId", orderShipment.getString("orderId"),
+                                            "orderItemSeqId", orderShipment.getString("orderItemSeqId")).queryOne();
                             product = orderItem.getRelatedOne("Product", false);
                         } catch (GenericEntityException e) {
                             return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
