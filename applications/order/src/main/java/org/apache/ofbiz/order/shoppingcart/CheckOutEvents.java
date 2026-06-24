@@ -21,10 +21,12 @@ package org.apache.ofbiz.order.shoppingcart;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -42,7 +44,6 @@ import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
-import org.apache.ofbiz.marketing.tracking.TrackingCodeEvents;
 import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.party.party.PartyWorker;
 import org.apache.ofbiz.product.store.ProductStoreWorker;
@@ -492,8 +493,25 @@ public class CheckOutEvents {
 
         boolean areOrderItemsExploded = explodeOrderItems(delegator, cart);
 
-        //get the TrackingCodeOrder List
-        List<GenericValue> trackingCodeOrders = TrackingCodeEvents.makeTrackingCodeOrders(request);
+        //get the TrackingCodeOrder List via the marketing service engine (avoids a compile-time dependency on the marketing component)
+        List<GenericValue> trackingCodeOrders = new ArrayList<>();
+        Map<String, String> trackingCookies = new LinkedHashMap<>();
+        Cookie[] requestCookies = request.getCookies();
+        if (requestCookies != null) {
+            for (Cookie cookie : requestCookies) {
+                trackingCookies.put(cookie.getName(), cookie.getValue());
+            }
+        }
+        try {
+            Map<String, Object> trackingResult = dispatcher.runSync("makeTrackingCodeOrders", UtilMisc.toMap("cookies", trackingCookies));
+            if (ServiceUtil.isError(trackingResult)) {
+                Debug.logError(ServiceUtil.getErrorMessage(trackingResult), MODULE);
+            } else {
+                trackingCodeOrders = UtilGenerics.cast(trackingResult.get("trackingCodeOrders"));
+            }
+        } catch (GenericServiceException e) {
+            Debug.logError(e, "Error calling makeTrackingCodeOrders service", MODULE);
+        }
         String distributorId = (String) session.getAttribute("_DISTRIBUTOR_ID_");
         String affiliateId = (String) session.getAttribute("_AFFILIATE_ID_");
         String visitId = VisitHandler.getVisitId(session);

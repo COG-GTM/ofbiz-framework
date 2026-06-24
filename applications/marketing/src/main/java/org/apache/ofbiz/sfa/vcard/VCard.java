@@ -45,8 +45,6 @@ import org.apache.ofbiz.entity.condition.EntityCondition;
 import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
-import org.apache.ofbiz.party.party.PartyHelper;
-import org.apache.ofbiz.party.party.PartyWorker;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -236,7 +234,9 @@ public class VCard {
 
     public static Map<String, Object> exportVCard(DispatchContext dctx, Map<String, ? extends Object> context) {
         Delegator delegator = dctx.getDelegator();
+        LocalDispatcher dispatcher = dctx.getDispatcher();
         String partyId = (String) context.get("partyId");
+        GenericValue userLogin = (GenericValue) context.get("userLogin");
         Locale locale = (Locale) context.get("locale");
         File file = null;
         try {
@@ -252,10 +252,10 @@ public class VCard {
                 }
                 vcard.setStructuredName(structuredName);
             }
-            String fullName = PartyHelper.getPartyName(delegator, partyId, false);
+            String fullName = getPartyName(dispatcher, partyId, userLogin);
             vcard.setFormattedName(fullName);
 
-            GenericValue postalAddress = PartyWorker.findPartyLatestPostalAddress(partyId, delegator);
+            GenericValue postalAddress = findPartyLatestPostalAddress(delegator, partyId);
             if (postalAddress != null) {
                 Address address = new Address();
                 address.setStreetAddress(postalAddress.getString("address1"));
@@ -275,7 +275,7 @@ public class VCard {
                 vcard.addAddress(address);
             }
 
-            GenericValue telecomNumber = PartyWorker.findPartyLatestTelecomNumber(partyId, delegator);
+            GenericValue telecomNumber = findPartyLatestTelecomNumber(delegator, partyId);
             if (telecomNumber != null) {
                 Telephone tel = new Telephone(telecomNumber.getString("areaCode") + telecomNumber.getString("contactNumber"));
                 tel.getTypes().add(TelephoneType.WORK);
@@ -283,7 +283,7 @@ public class VCard {
                 //TODO : this can be better set by checking contactMechPurposeTypeId
             }
 
-            GenericValue emailAddress = PartyWorker.findPartyLatestContactMech(partyId, "EMAIL_ADDRESS", delegator);
+            GenericValue emailAddress = findPartyLatestContactMech(delegator, partyId, "EMAIL_ADDRESS");
             if (emailAddress != null && UtilValidate.isNotEmpty(emailAddress.getString("infoString"))) {
                 vcard.addEmail(new Email(emailAddress.getString("infoString")));
             }
@@ -309,5 +309,67 @@ public class VCard {
                     "SfaExportVCardError", UtilMisc.toMap("errorString", e.getMessage()), locale));
         }
         return ServiceUtil.returnSuccess();
+    }
+
+    /**
+     * Resolves the formatted party name through the party component's <code>getPartyNameForDate</code> service rather than a
+     * direct compile-time call to PartyHelper, falling back to the partyId when the name cannot be resolved (which mirrors
+     * the previous behavior when no PartyNameView record exists).
+     */
+    private static String getPartyName(LocalDispatcher dispatcher, String partyId, GenericValue userLogin) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getPartyNameForDate",
+                    UtilMisc.toMap("partyId", partyId, "userLogin", userLogin));
+            if (!ServiceUtil.isError(result)) {
+                String fullName = (String) result.get("fullName");
+                return fullName != null ? fullName : partyId;
+            }
+            Debug.logError(ServiceUtil.getErrorMessage(result), MODULE);
+        } catch (GenericServiceException e) {
+            Debug.logError(e, "Error calling getPartyNameForDate service for partyId [" + partyId + "]", MODULE);
+        }
+        return partyId;
+    }
+
+    /**
+     * Finds the most recent, currently effective ContactMech of the given type for a party. Replaces the previous
+     * compile-time call to PartyWorker; only datamodel entities are referenced.
+     */
+    private static GenericValue findPartyLatestContactMech(Delegator delegator, String partyId, String contactMechTypeId) {
+        try {
+            return EntityQuery.use(delegator).from("PartyAndContactMech")
+                    .where("partyId", partyId, "contactMechTypeId", contactMechTypeId)
+                    .orderBy("-fromDate")
+                    .filterByDate()
+                    .queryFirst();
+        } catch (GenericEntityException e) {
+            Debug.logError(e, "Error while finding latest ContactMech for party with ID [" + partyId + "] TYPE ["
+                    + contactMechTypeId + "]: " + e.toString(), MODULE);
+            return null;
+        }
+    }
+
+    private static GenericValue findPartyLatestPostalAddress(Delegator delegator, String partyId) {
+        GenericValue pcm = findPartyLatestContactMech(delegator, partyId, "POSTAL_ADDRESS");
+        if (pcm != null) {
+            try {
+                return pcm.getRelatedOne("PostalAddress", false);
+            } catch (GenericEntityException e) {
+                Debug.logError(e, "Error while finding latest PostalAddress for party with ID [" + partyId + "]: " + e.toString(), MODULE);
+            }
+        }
+        return null;
+    }
+
+    private static GenericValue findPartyLatestTelecomNumber(Delegator delegator, String partyId) {
+        GenericValue pcm = findPartyLatestContactMech(delegator, partyId, "TELECOM_NUMBER");
+        if (pcm != null) {
+            try {
+                return pcm.getRelatedOne("TelecomNumber", false);
+            } catch (GenericEntityException e) {
+                Debug.logError(e, "Error while finding latest TelecomNumber for party with ID [" + partyId + "]: " + e.toString(), MODULE);
+            }
+        }
+        return null;
     }
 }

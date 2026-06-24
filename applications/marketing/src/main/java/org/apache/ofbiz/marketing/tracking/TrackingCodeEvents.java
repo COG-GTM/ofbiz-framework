@@ -21,8 +21,10 @@ package org.apache.ofbiz.marketing.tracking;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +33,7 @@ import jakarta.servlet.http.HttpSession;
 
 import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.UtilDateTime;
+import org.apache.ofbiz.base.util.UtilGenerics;
 import org.apache.ofbiz.base.util.UtilMisc;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.entity.Delegator;
@@ -38,7 +41,8 @@ import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
-import org.apache.ofbiz.product.category.CategoryWorker;
+import org.apache.ofbiz.service.DispatchContext;
+import org.apache.ofbiz.service.ServiceUtil;
 import org.apache.ofbiz.webapp.stats.VisitHandler;
 import org.apache.ofbiz.webapp.website.WebSiteWorker;
 
@@ -48,6 +52,8 @@ import org.apache.ofbiz.webapp.website.WebSiteWorker;
 public class TrackingCodeEvents {
 
     private static final String MODULE = TrackingCodeEvents.class.getName();
+    // Shared session-attribute key for the category breadcrumb trail (runtime contract owned by the product component).
+    private static final String BREAD_CRUMB_TRAIL_ATTR = "_BREAD_CRUMB_TRAIL_";
 
     /**
      * If TrackingCode monitoring is desired this event should be added to the list
@@ -324,7 +330,7 @@ public class TrackingCodeEvents {
         String prodCatalogId = trackingCode.getString("prodCatalogId");
         if (UtilValidate.isNotEmpty(prodCatalogId)) {
             session.setAttribute("CURRENT_CATALOG_ID", prodCatalogId);
-            CategoryWorker.setTrail(request, new LinkedList<>());
+            session.setAttribute(BREAD_CRUMB_TRAIL_ATTR, new LinkedList<>());
         }
 
         // if forward/redirect is needed, do a response.sendRedirect and return null to tell the control servlet to not do any other requests/views
@@ -489,45 +495,68 @@ public class TrackingCodeEvents {
      */
     public static List<GenericValue> makeTrackingCodeOrders(HttpServletRequest request) {
         Delegator delegator = (Delegator) request.getAttribute("delegator");
+        Map<String, String> cookieMap = new LinkedHashMap<>();
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                cookieMap.put(cookie.getName(), cookie.getValue());
+            }
+        }
+        return makeTrackingCodeOrders(delegator, cookieMap);
+    }
+
+    /**
+     * Service-engine variant of {@link #makeTrackingCodeOrders(HttpServletRequest)}. Lets other components (e.g. the order
+     * checkout flow) obtain the TrackingCodeOrder values through a named service call instead of a direct compile-time
+     * dependency on this class. Expects an ordered map of cookie name to value under the <code>cookies</code> key.
+     */
+    public static Map<String, Object> makeTrackingCodeOrders(DispatchContext dctx, Map<String, ? extends Object> context) {
+        Map<String, String> cookies = UtilGenerics.cast(context.get("cookies"));
+        if (cookies == null) {
+            cookies = new LinkedHashMap<>();
+        }
+        List<GenericValue> trackingCodeOrders = makeTrackingCodeOrders(dctx.getDelegator(), cookies);
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("trackingCodeOrders", trackingCodeOrders);
+        return result;
+    }
+
+    private static List<GenericValue> makeTrackingCodeOrders(Delegator delegator, Map<String, String> cookies) {
         java.sql.Timestamp nowStamp = UtilDateTime.nowTimestamp();
         List<GenericValue> trackingCodeOrders = new LinkedList<>();
 
-        Cookie[] cookies = request.getCookies();
         Timestamp affiliateReferredTimeStamp = null;
         String siteId = null;
         String isBillable = null;
         String trackingCodeId = null;
-        if (cookies != null && cookies.length > 0) {
-            for (int i = 0; i < cookies.length; i++) {
-                String cookieName = cookies[i].getName();
-                // find the siteId cookie if it exists
-                if ("Ofbiz.TKCD.SiteId".equals(cookieName)) {
-                    siteId = cookies[i].getValue();
-                }
+        for (Map.Entry<String, String> cookie : cookies.entrySet()) {
+            String cookieName = cookie.getKey();
+            // find the siteId cookie if it exists
+            if ("Ofbiz.TKCD.SiteId".equals(cookieName)) {
+                siteId = cookie.getValue();
+            }
 
-                // find the referred timestamp cookie if it exists
-                if ("Ofbiz.TKCD.UpdatedTimeStamp".equals(cookieName)) {
-                    String affiliateReferredTime = cookies[i].getValue();
-                    if (affiliateReferredTime != null && !"".equals(affiliateReferredTime)) {
-                        try {
-                            affiliateReferredTimeStamp = Timestamp.valueOf(affiliateReferredTime);
-                        } catch (IllegalArgumentException e) {
-                            Debug.logError(e, "Error parsing affiliateReferredTimeStamp value from cookie", MODULE);
-                        }
+            // find the referred timestamp cookie if it exists
+            if ("Ofbiz.TKCD.UpdatedTimeStamp".equals(cookieName)) {
+                String affiliateReferredTime = cookie.getValue();
+                if (affiliateReferredTime != null && !"".equals(affiliateReferredTime)) {
+                    try {
+                        affiliateReferredTimeStamp = Timestamp.valueOf(affiliateReferredTime);
+                    } catch (IllegalArgumentException e) {
+                        Debug.logError(e, "Error parsing affiliateReferredTimeStamp value from cookie", MODULE);
                     }
                 }
+            }
 
-                // find any that start with TKCDB_ for billable tracking code cookies with isBillable=Y
-                // also and for each TKCDT_ cookie that doesn't have a corresponding billable code add it to the list with isBillable=N
-                // This cookie value keeps trackingCodeId
-                if (cookieName.startsWith("TKCDB_")) {
-                    isBillable = "Y";
-                    trackingCodeId = cookies[i].getValue();
-                } else if (cookieName.startsWith("TKCDT_")) {
-                    isBillable = "N";
-                    trackingCodeId = cookies[i].getValue();
-                }
-
+            // find any that start with TKCDB_ for billable tracking code cookies with isBillable=Y
+            // also and for each TKCDT_ cookie that doesn't have a corresponding billable code add it to the list with isBillable=N
+            // This cookie value keeps trackingCodeId
+            if (cookieName.startsWith("TKCDB_")) {
+                isBillable = "Y";
+                trackingCodeId = cookie.getValue();
+            } else if (cookieName.startsWith("TKCDT_")) {
+                isBillable = "N";
+                trackingCodeId = cookie.getValue();
             }
         }
         GenericValue trackingCode = null;
