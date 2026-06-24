@@ -52,7 +52,6 @@ import org.apache.ofbiz.manufacturing.bom.BOMTree;
 import org.apache.ofbiz.manufacturing.techdata.TechDataServices;
 import org.apache.ofbiz.product.config.ProductConfigWrapper;
 import org.apache.ofbiz.product.config.ProductConfigWrapper.ConfigOption;
-import org.apache.ofbiz.product.product.ProductWorker;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -2663,6 +2662,36 @@ public class ProductionRunServices {
         return result;
     }
 
+    /**
+     * Returns the configured (aggregated) instance product id for the given aggregated product and configId,
+     * or {@code null} if none matches. This is a manufacturing-local replacement for
+     * {@code ProductWorker.getAggregatedInstanceId(...)} that avoids a compile-time dependency on the
+     * product component, relying only on shared datamodel entities (Product / ProductAssoc).
+     */
+    private static String getAggregatedInstanceId(Delegator delegator, String aggregatedProductId, String configId)
+            throws GenericEntityException {
+        List<GenericValue> productAssocs = getAggregatedAssocs(delegator, aggregatedProductId);
+        if (UtilValidate.isNotEmpty(productAssocs) && UtilValidate.isNotEmpty(configId)) {
+            for (GenericValue productAssoc : productAssocs) {
+                GenericValue product = productAssoc.getRelatedOne("AssocProduct", false);
+                if (configId.equals(product.getString("configId"))) {
+                    return productAssoc.getString("productIdTo");
+                }
+            }
+        }
+        return null;
+    }
+
+    private static List<GenericValue> getAggregatedAssocs(Delegator delegator, String aggregatedProductId) throws GenericEntityException {
+        GenericValue aggregatedProduct = EntityQuery.use(delegator).from("Product").where("productId", aggregatedProductId).queryOne();
+        if (aggregatedProduct != null && ("AGGREGATED".equals(aggregatedProduct.getString("productTypeId"))
+                || "AGGREGATED_SERVICE".equals(aggregatedProduct.getString("productTypeId")))) {
+            return EntityUtil.filterByDate(aggregatedProduct.getRelated("MainProductAssoc",
+                    UtilMisc.toMap("productAssocTypeId", "PRODUCT_CONF"), null, false));
+        }
+        return null;
+    }
+
     public static Map<String, Object> createProductionRunFromConfiguration(DispatchContext ctx, Map<String, ? extends Object> context) {
         Map<String, Object> result = new HashMap<>();
         Delegator delegator = ctx.getDelegator();
@@ -2695,7 +2724,7 @@ public class ProductionRunServices {
         }
         String instanceProductId = null;
         try {
-            instanceProductId = ProductWorker.getAggregatedInstanceId(delegator, config.getProduct().getString("productId"), config.getConfigId());
+            instanceProductId = getAggregatedInstanceId(delegator, config.getProduct().getString("productId"), config.getConfigId());
         } catch (Exception e) {
             return ServiceUtil.returnError(e.getMessage());
         }
