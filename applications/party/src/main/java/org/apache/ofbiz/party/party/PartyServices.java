@@ -1000,6 +1000,27 @@ public class PartyServices {
         return result;
     }
 
+    /**
+     * Service wrapper around {@link PartyHelper#getPartyName(Delegator, String, boolean)} so that other
+     * components can obtain a party's formatted display name through the Service Engine without a direct
+     * Java dependency on the party component. Mirrors the helper semantics: when the party cannot be
+     * found the supplied partyId is returned as the name.
+     * @param dctx the dispatch context
+     * @param context the service context, expects partyId and optional lastNameFirst
+     * @return service results including partyName
+     */
+    public static Map<String, Object> getPartyName(DispatchContext dctx, Map<String, ? extends Object> context) {
+        Delegator delegator = dctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        Boolean lastNameFirst = (Boolean) context.get("lastNameFirst");
+        if (lastNameFirst == null) {
+            lastNameFirst = Boolean.FALSE;
+        }
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("partyName", PartyHelper.getPartyName(delegator, partyId, lastNameFirst));
+        return result;
+    }
+
     @Deprecated // migration from ftl to widget in process.
     public static Map<String, Object> findParty(DispatchContext dctx, Map<String, ? extends Object> context) {
         Map<String, Object> result = ServiceUtil.returnSuccess();
