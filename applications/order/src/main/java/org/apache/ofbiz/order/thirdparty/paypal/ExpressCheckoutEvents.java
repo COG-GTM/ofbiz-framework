@@ -37,7 +37,6 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCart;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCartEvents;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.service.ServiceUtil;
@@ -92,9 +91,10 @@ public class ExpressCheckoutEvents {
             Debug.logError("No ExpressCheckout token found in cart, you must do a successful setExpressCheckout before redirecting.", MODULE);
             return "error";
         }
+        LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
         productStoreId = cart.getProductStoreId();
         if (productStoreId != null) {
-            GenericValue payPalPaymentSetting = ProductStoreWorker.getProductStorePaymentSetting(delegator, productStoreId, "EXT_PAYPAL", null, true);
+            GenericValue payPalPaymentSetting = getPayPalPaymentSetting(dispatcher, productStoreId);
             if (payPalPaymentSetting != null) {
                 paymentGatewayConfigId = payPalPaymentSetting.getString("paymentGatewayConfigId");
             }
@@ -179,7 +179,7 @@ public class ExpressCheckoutEvents {
 
     public static Map<String, Object> doExpressCheckout(String productStoreId, String orderId, GenericValue paymentPref,
                                                         GenericValue userLogin, Delegator delegator, LocalDispatcher dispatcher) {
-        CheckoutType checkoutType = determineCheckoutType(delegator, productStoreId);
+        CheckoutType checkoutType = determineCheckoutType(dispatcher, productStoreId);
         if (!checkoutType.equals(CheckoutType.NONE)) {
             String serviceName = null;
             if (checkoutType.equals(CheckoutType.PAYFLOW)) {
@@ -212,14 +212,24 @@ public class ExpressCheckoutEvents {
     }
 
     public static CheckoutType determineCheckoutType(HttpServletRequest request) {
-        Delegator delegator = (Delegator) request.getAttribute("delegator");
+        LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
         ShoppingCart cart = ShoppingCartEvents.getCartObject(request);
-        return determineCheckoutType(delegator, cart.getProductStoreId());
+        return determineCheckoutType(dispatcher, cart.getProductStoreId());
     }
 
-    public static CheckoutType determineCheckoutType(Delegator delegator, String productStoreId) {
-        GenericValue payPalPaymentSetting = ProductStoreWorker.getProductStorePaymentSetting(delegator, productStoreId,
-                "EXT_PAYPAL", null, true);
+    private static GenericValue getPayPalPaymentSetting(LocalDispatcher dispatcher, String productStoreId) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getProductStorePaymentSetting",
+                    UtilMisc.toMap("productStoreId", productStoreId, "paymentMethodTypeId", "EXT_PAYPAL", "anyServiceType", Boolean.TRUE));
+            return (GenericValue) result.get("paymentSetting");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
+
+    public static CheckoutType determineCheckoutType(LocalDispatcher dispatcher, String productStoreId) {
+        GenericValue payPalPaymentSetting = getPayPalPaymentSetting(dispatcher, productStoreId);
         if (payPalPaymentSetting != null && payPalPaymentSetting.getString("paymentGatewayConfigId") != null) {
             try {
                 GenericValue paymentGatewayConfig = payPalPaymentSetting.getRelatedOne("PaymentGatewayConfig", false);

@@ -5559,7 +5559,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
             //check information from the cart ship info
             try {
                 if (facilityId != null) {
-                    originAddress = ShippingEvents.getShippingOriginContactMechFromFacility(delegator, facilityId);
+                    originAddress = ShippingEvents.getShippingOriginContactMechFromFacility(cart.getDispatcher(), facilityId);
                 }
                 if (originAddress == null && supplierPartyId != null) {
                     originAddress = ShippingEvents.getShippingOriginContactMech(delegator, supplierPartyId);
@@ -5571,7 +5571,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 if (originAddress == null) {
                     //try now to resolve from the cart
                     if (cart.getFacilityId() != null) {
-                        originAddress = ShippingEvents.getShippingOriginContactMechFromFacility(delegator, cart.getFacilityId());
+                        originAddress = ShippingEvents.getShippingOriginContactMechFromFacility(cart.getDispatcher(), cart.getFacilityId());
                     }
                     if (originAddress == null && cart.getShipFromVendorPartyId() != null) {
                         originAddress = ShippingEvents.getShippingOriginContactMech(delegator, cart.getShipFromVendorPartyId());

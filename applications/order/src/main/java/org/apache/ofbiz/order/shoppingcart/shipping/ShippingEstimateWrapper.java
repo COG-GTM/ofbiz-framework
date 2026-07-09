@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ofbiz.base.util.Debug;
+import org.apache.ofbiz.base.util.UtilGenerics;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
@@ -32,7 +33,6 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCart;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCartItem;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.service.ServiceUtil;
 
@@ -103,8 +103,15 @@ public class ShippingEstimateWrapper {
      */
     protected void loadShippingMethods() {
         try {
-            this.shippingMethods = ProductStoreWorker.getAvailableStoreShippingMethods(delegator, productStoreId,
-                    shippingAddress, shippableItemSizes, shippableItemFeatures, shippableWeight, shippableTotal);
+            Map<String, Object> serviceCtx = new HashMap<>();
+            serviceCtx.put("productStoreId", productStoreId);
+            serviceCtx.put("shippingAddress", shippingAddress);
+            serviceCtx.put("itemSizes", shippableItemSizes);
+            serviceCtx.put("featureIdMap", shippableItemFeatures);
+            serviceCtx.put("weight", shippableWeight);
+            serviceCtx.put("orderTotal", shippableTotal);
+            Map<String, Object> result = dispatcher.runSync("getAvailableStoreShippingMethods", serviceCtx);
+            this.shippingMethods = UtilGenerics.cast(result.get("shippingMethods"));
         } catch (Throwable t) {
             Debug.logError(t, MODULE);
         }

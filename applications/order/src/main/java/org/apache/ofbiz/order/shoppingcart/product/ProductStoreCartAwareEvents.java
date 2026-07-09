@@ -26,12 +26,13 @@ import jakarta.servlet.http.HttpSession;
 
 import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.UtilHttp;
-import org.apache.ofbiz.entity.Delegator;
+import org.apache.ofbiz.base.util.UtilMisc;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCart;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCartEvents;
 import org.apache.ofbiz.order.shoppingcart.WebShoppingCart;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
+import org.apache.ofbiz.service.GenericServiceException;
+import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.webapp.website.WebSiteWorker;
 
 /**
@@ -70,10 +71,17 @@ public class ProductStoreCartAwareEvents {
             return;
         }
 
-        Delegator delegator = (Delegator) request.getAttribute("delegator");
+        LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
 
         // get the ProductStore record, make sure it's valid
-        GenericValue productStore = ProductStoreWorker.getProductStore(productStoreId, delegator);
+        GenericValue productStore;
+        try {
+            Map<String, Object> storeResult = dispatcher.runSync("getProductStore", UtilMisc.toMap("productStoreId", productStoreId));
+            productStore = (GenericValue) storeResult.get("productStore");
+        } catch (GenericServiceException e) {
+            throw new IllegalArgumentException("Cannot set session ProductStore, error looking up productStoreId [" + productStoreId + "]: "
+                    + e.toString());
+        }
         if (productStore == null) {
             throw new IllegalArgumentException("Cannot set session ProductStore, passed productStoreId [" + productStoreId
                     + "] is not valid/not found.");

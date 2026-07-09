@@ -24,6 +24,15 @@ under the License.
     <vendor>OFBiz</vendor>
     <version>1.0</version>
 
+    <!-- Party read services (Service Engine wrappers used to decouple other components such as order from the party
+         internal Java classes) -->
+    <service name="getPartyLatestUserLogin" engine="java"
+            location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyLatestUserLogin">
+        <description>Get the most recently updated UserLogin for a party</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false"/>
+        <attribute name="foundUserLogin" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+
     <!-- PartyClassificationType services -->
     <service name="createPartyClassificationType" default-entity-name="PartyClassificationType" engine="entity-auto" invoke="create" auth="true">
         <description>Create a PartyClassificationType Record</description>
