@@ -1124,6 +1124,58 @@ under the License.
         <attribute name="contactMechId" type="String" mode="OUT" optional="true"/>
     </service>
 
+    <service name="getPartyName" engine="java"
+            location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyName" auth="false">
+        <description>Get the formatted party name. Wraps PartyHelper.getPartyName so callers can obtain a party name
+            through the Service Engine instead of a direct Java class reference. Returns the partyId itself when no
+            PartyNameView record is found, mirroring the helper behaviour.</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="lastNameFirst" type="Boolean" mode="IN" optional="true" default-value="false"/>
+        <attribute name="partyName" type="String" mode="OUT" optional="true"/>
+    </service>
+
+    <service name="getPartyLatestPostalAddress" engine="java"
+            location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyLatestPostalAddress" auth="false">
+        <description>Get the latest PostalAddress for a party regardless of purpose. Wraps
+            PartyWorker.findPartyLatestPostalAddress to preserve the "latest record" semantics (as opposed to the
+            purpose/primary based getPartyPostalAddress service).</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="postalAddress" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+
+    <service name="getPartyLatestTelecomNumber" engine="java"
+            location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyLatestTelecomNumber" auth="false">
+        <description>Get the latest TelecomNumber for a party regardless of purpose. Wraps
+            PartyWorker.findPartyLatestTelecomNumber to preserve the "latest record" semantics.</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="telecomNumber" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+
+    <service name="getPartyLatestContactMech" engine="java"
+            location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyLatestContactMech" auth="false">
+        <description>Get the latest PartyAndContactMech record for a party and contact mech type, regardless of purpose.
+            Wraps PartyWorker.findPartyLatestContactMech to preserve the "latest record" semantics.</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="contactMechTypeId" type="String" mode="IN" optional="false"/>
+        <attribute name="contactMech" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+
     <service name="createPartyCarrierAccount" default-entity-name="PartyCarrierAccount" engine="entity-auto" invoke="create" auth="true">
         <description>Create a PartyCarrierAccount record</description>
         <auto-attributes mode="IN" include="pk" optional="false"/>

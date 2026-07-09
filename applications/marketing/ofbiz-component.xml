@@ -21,6 +21,10 @@ under the License.
 <ofbiz-component name="marketing"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/ofbiz-component.xsd">
+    <!-- marketing routes its cross-module interactions (VCard export, lead/contact cloning and merging, SFA screens)
+         through the party component's Service Engine services, minilang and widgets, so declare the dependency
+         explicitly to ensure party is loaded first. -->
+    <depends-on component-name="party"/>
     <resource-loader name="main" type="component"/>
     <classpath type="dir" location="config"/>
 
