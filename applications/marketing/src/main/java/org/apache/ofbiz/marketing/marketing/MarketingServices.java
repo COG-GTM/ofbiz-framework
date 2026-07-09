@@ -33,6 +33,7 @@ import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtil;
+import org.apache.ofbiz.marketing.party.PartyGateway;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -48,6 +49,7 @@ public class MarketingServices {
     private static final String MODULE = MarketingServices.class.getName();
     public static final String RESOURCE = "MarketingUiLabels";
     private static final String RES_ORDER = "OrderUiLabels";
+    private static final PartyGateway PARTY = PartyGateway.getInstance();
 
     public static Map<String, Object> signUpForContactList(DispatchContext dctx, Map<String, ? extends Object> context) {
         LocalDispatcher dispatcher = dctx.getDispatcher();
@@ -95,7 +97,7 @@ public class MarketingServices {
             }
             Map<String, Object> input = UtilMisc.toMap("userLogin", userLogin, "emailAddress", email, "partyId", partyId,
                     "fromDate", fromDate, "contactMechPurposeTypeId", "OTHER_EMAIL");
-            Map<String, Object> serviceResults = dispatcher.runSync("createPartyEmailAddress", input);
+            Map<String, Object> serviceResults = PARTY.createPartyEmailAddress(dispatcher, input);
             if (ServiceUtil.isError(serviceResults)) {
                 throw new GenericServiceException(ServiceUtil.getErrorMessage(serviceResults));
             }
