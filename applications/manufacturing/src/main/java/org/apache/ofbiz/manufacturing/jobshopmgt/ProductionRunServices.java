@@ -49,10 +49,12 @@ import org.apache.ofbiz.entity.util.EntityTypeUtil;
 import org.apache.ofbiz.entity.util.EntityUtil;
 import org.apache.ofbiz.manufacturing.bom.BOMNode;
 import org.apache.ofbiz.manufacturing.bom.BOMTree;
+import org.apache.ofbiz.manufacturing.boundary.OrderGateway;
+import org.apache.ofbiz.manufacturing.boundary.ProductGateway;
+import org.apache.ofbiz.manufacturing.boundary.WorkEffortGateway;
 import org.apache.ofbiz.manufacturing.techdata.TechDataServices;
 import org.apache.ofbiz.product.config.ProductConfigWrapper;
 import org.apache.ofbiz.product.config.ProductConfigWrapper.ConfigOption;
-import org.apache.ofbiz.product.product.ProductWorker;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -112,7 +114,7 @@ public class ProductionRunServices {
                 serviceContext.put("workEffortId", productionRunId);
                 serviceContext.put("currentStatusId", "PRUN_CANCELLED");
                 serviceContext.put("userLogin", userLogin);
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -138,7 +140,7 @@ public class ProductionRunServices {
                     serviceContext.put("workEffortId", taskId);
                     serviceContext.put("currentStatusId", "PRUN_CANCELLED");
                     serviceContext.put("userLogin", userLogin);
-                    serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                    serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -280,7 +282,7 @@ public class ProductionRunServices {
         serviceContext.put("quantityToProduce", pRQuantity);
         serviceContext.put("userLogin", userLogin);
         try {
-            serviceResult = dispatcher.runSync("createWorkEffort", serviceContext);
+            serviceResult = WorkEffortGateway.createWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -303,7 +305,7 @@ public class ProductionRunServices {
         serviceContext.put("fromDate", startDate);
         serviceContext.put("userLogin", userLogin);
         try {
-            serviceResult = dispatcher.runSync("createWorkEffortGoodStandard", serviceContext);
+            serviceResult = WorkEffortGateway.createWorkEffortGoodStandard(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -345,7 +347,7 @@ public class ProductionRunServices {
                 serviceContext.put("userLogin", userLogin);
                 serviceResult = null;
                 try {
-                    serviceResult = dispatcher.runSync("createWorkEffort", serviceContext);
+                    serviceResult = WorkEffortGateway.createWorkEffort(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -365,7 +367,7 @@ public class ProductionRunServices {
                 serviceContext.put("workEffortIdTo", productionRunTaskId);
                 serviceContext.put("workEffortAssocTypeId", "WORK_EFF_TEMPLATE");
                 try {
-                    serviceResult = dispatcher.runSync("createWorkEffortAssoc", serviceContext);
+                    serviceResult = WorkEffortGateway.createWorkEffortAssoc(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -404,7 +406,7 @@ public class ProductionRunServices {
                         serviceContext.put("userLogin", userLogin);
                         serviceResult = null;
                         try {
-                            serviceResult = dispatcher.runSync("createWorkEffortGoodStandard", serviceContext);
+                            serviceResult = WorkEffortGateway.createWorkEffortGoodStandard(dispatcher, serviceContext);
                             if (ServiceUtil.isError(serviceResult)) {
                                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                             }
@@ -428,7 +430,7 @@ public class ProductionRunServices {
         serviceContext.put("userLogin", userLogin);
         serviceResult = null;
         try {
-            serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+            serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -465,7 +467,7 @@ public class ProductionRunServices {
                         "statusId", workEffortPartyAssignment.getString("statusId"),
                         "userLogin", userLogin);
                 try {
-                    Map<String, Object> result = dctx.getDispatcher().runSync("assignPartyToWorkEffort", partyToWorkEffort);
+                    Map<String, Object> result = WorkEffortGateway.assignPartyToWorkEffort(dctx.getDispatcher(), partyToWorkEffort);
                     if (ServiceUtil.isError(result)) {
                         String errorMessage = ServiceUtil.getErrorMessage(result);
                         Debug.logError(errorMessage, MODULE);
@@ -634,7 +636,7 @@ public class ProductionRunServices {
             serviceContext.put("currentStatusId", statusId);
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -649,7 +651,7 @@ public class ProductionRunServices {
                 serviceContext.put("currentStatusId", statusId);
                 serviceContext.put("userLogin", userLogin);
                 try {
-                    serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                    serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                     }
@@ -674,7 +676,7 @@ public class ProductionRunServices {
             serviceContext.put("currentStatusId", "PRUN_DOC_PRINTED");
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -689,7 +691,7 @@ public class ProductionRunServices {
                 serviceContext.put("currentStatusId", "PRUN_DOC_PRINTED");
                 serviceContext.put("userLogin", userLogin);
                 try {
-                    serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                    serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                     }
@@ -734,7 +736,7 @@ public class ProductionRunServices {
             serviceContext.put("actualStartDate", UtilDateTime.nowTimestamp());
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -759,7 +761,7 @@ public class ProductionRunServices {
             serviceContext.put("actualCompletionDate", UtilDateTime.nowTimestamp());
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -782,7 +784,7 @@ public class ProductionRunServices {
             serviceContext.put("currentStatusId", "PRUN_CLOSED");
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -797,7 +799,7 @@ public class ProductionRunServices {
                 serviceContext.put("currentStatusId", "PRUN_CLOSED");
                 serviceContext.put("userLogin", userLogin);
                 try {
-                    serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                    serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                     }
@@ -892,7 +894,7 @@ public class ProductionRunServices {
             serviceContext.put("actualStartDate", UtilDateTime.nowTimestamp());
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -980,7 +982,7 @@ public class ProductionRunServices {
             }
             serviceContext.put("userLogin", userLogin);
             try {
-                serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+                serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunStatusNotChanged", locale));
                 }
@@ -1068,7 +1070,7 @@ public class ProductionRunServices {
                             inMap.put("costComponentTypeId", "ACTUAL_" + productCostComponentCalc.getString("costComponentTypeId"));
                             inMap.put("costUomId", partyAccountingPreference.get("baseCurrencyUomId"));
                             inMap.put("cost", productCostAdjustment);
-                            serviceResult = dispatcher.runSync("createCostComponent", inMap);
+                            serviceResult = ProductGateway.createCostComponent(dispatcher, inMap);
                             if (ServiceUtil.isError(serviceResult)) {
                                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                             }
@@ -1233,7 +1235,7 @@ public class ProductionRunServices {
                     inMap.put("costComponentCalcId", costComponentCalc.getString("costComponentCalcId"));
                     inMap.put("costUomId", costComponentCalc.getString("currencyUomId"));
                     inMap.put("cost", totalCost);
-                    serviceResult = dispatcher.runSync("createCostComponent", inMap);
+                    serviceResult = ProductGateway.createCostComponent(dispatcher, inMap);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -1280,7 +1282,7 @@ public class ProductionRunServices {
                     inMap.put("costUomId", currencyUomId);
                     inMap.put("cost", fixedAssetCost);
                     inMap.put("fixedAssetId", fixedAsset.get("fixedAssetId"));
-                    serviceResult = dispatcher.runSync("createCostComponent", inMap);
+                    serviceResult = ProductGateway.createCostComponent(dispatcher, inMap);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -1338,7 +1340,7 @@ public class ProductionRunServices {
                 inMap.put("costComponentTypeId", "ACTUAL_MAT_COST");
                 inMap.put("costUomId", currencyUomId);
                 inMap.put("cost", materialsCost);
-                serviceResult = dispatcher.runSync("createCostComponent", inMap);
+                serviceResult = ProductGateway.createCostComponent(dispatcher, inMap);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -1379,7 +1381,7 @@ public class ProductionRunServices {
                             inMap.put("costComponentTypeId", "ACTUAL_LABOR_COST");
                             inMap.put("costUomId", rateAmount.getString("rateCurrencyUomId"));
                             inMap.put("cost", laborCost);
-                            serviceResult = dispatcher.runSync("createCostComponent", inMap);
+                            serviceResult = ProductGateway.createCostComponent(dispatcher, inMap);
                             if (ServiceUtil.isError(serviceResult)) {
                                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                             }
@@ -1552,7 +1554,7 @@ public class ProductionRunServices {
         serviceContext.put("estimatedQuantity", quantity);
         serviceContext.put("userLogin", userLogin);
         try {
-            Map<String, Object> serviceResult = dispatcher.runSync("createWorkEffortGoodStandard", serviceContext);
+            Map<String, Object> serviceResult = WorkEffortGateway.createWorkEffortGoodStandard(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -1630,7 +1632,7 @@ public class ProductionRunServices {
         }
         serviceContext.put("userLogin", userLogin);
         try {
-            Map<String, Object> serviceResult = dispatcher.runSync("updateWorkEffortGoodStandard", serviceContext);
+            Map<String, Object> serviceResult = WorkEffortGateway.updateWorkEffortGoodStandard(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -1739,7 +1741,7 @@ public class ProductionRunServices {
         serviceContext.put("userLogin", userLogin);
         Map<String, Object> serviceResult = null;
         try {
-            serviceResult = dispatcher.runSync("createWorkEffort", serviceContext);
+            serviceResult = WorkEffortGateway.createWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -1777,7 +1779,7 @@ public class ProductionRunServices {
                         "statusId", workEffortPartyAssignment.getString("statusId"),
                         "userLogin", userLogin);
                 try {
-                    serviceResult = dispatcher.runSync("assignPartyToWorkEffort", partyToWorkEffort);
+                    serviceResult = WorkEffortGateway.assignPartyToWorkEffort(dispatcher, partyToWorkEffort);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -1874,7 +1876,7 @@ public class ProductionRunServices {
                 if (createLotIfNeeded) {
                     Map<String, Object> createLotCtx = ctx.makeValidContext("createLot", ModelService.IN_PARAM, context);
                     createLotCtx.put("creationDate", UtilDateTime.nowTimestamp());
-                    Map<String, Object> serviceResults = dispatcher.runSync("createLot", createLotCtx);
+                    Map<String, Object> serviceResults = ProductGateway.createLot(dispatcher, createLotCtx);
                     if (ServiceUtil.isError(serviceResults)) {
                         Debug.logError(ServiceUtil.getErrorMessage(serviceResults), MODULE);
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResults));
@@ -1913,7 +1915,7 @@ public class ProductionRunServices {
             if (partyAccountingPreference == null) {
                 return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingProductionRunUnableToFindCosts", locale));
             }
-            outputMap = dispatcher.runSync("getProductCost", UtilMisc.<String, Object>toMap("userLogin", userLogin, "productId",
+            outputMap = ProductGateway.getProductCost(dispatcher, UtilMisc.<String, Object>toMap("userLogin", userLogin, "productId",
                     productionRun.getProductProduced().getString("productId"), "currencyUomId",
                     (String) partyAccountingPreference.get("baseCurrencyUomId"), "costComponentTypePrefix", "EST_STD"));
             if (ServiceUtil.isError(outputMap)) {
@@ -1957,7 +1959,7 @@ public class ProductionRunServices {
                 createProductFacilityCtx.put("productId", productionRun.getProductProduced().getString("productId"));
                 createProductFacilityCtx.put("facilityId", facility.get("facilityId"));
                 createProductFacilityCtx.put("userLogin", userLogin);
-                Map<String, Object> serviceResult = dispatcher.runSync("createProductFacility", createProductFacilityCtx);
+                Map<String, Object> serviceResult = ProductGateway.createProductFacility(dispatcher, createProductFacilityCtx);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -1987,7 +1989,7 @@ public class ProductionRunServices {
                     serviceContext.put("locationSeqId", locationSeqId);
                     serviceContext.put("uomId", uomId);
                     serviceContext.put("userLogin", userLogin);
-                    Map<String, Object> serviceResult = dispatcher.runSync("createInventoryItem", serviceContext);
+                    Map<String, Object> serviceResult = ProductGateway.createInventoryItem(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -1999,7 +2001,7 @@ public class ProductionRunServices {
                     serviceContext.put("availableToPromiseDiff", BigDecimal.ONE);
                     serviceContext.put("quantityOnHandDiff", BigDecimal.ONE);
                     serviceContext.put("userLogin", userLogin);
-                    serviceResult = dispatcher.runSync("createInventoryItemDetail", serviceContext);
+                    serviceResult = ProductGateway.createInventoryItemDetail(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2007,7 +2009,7 @@ public class ProductionRunServices {
                     serviceContext.put("userLogin", userLogin);
                     serviceContext.put("workEffortId", productionRunId);
                     serviceContext.put("inventoryItemId", inventoryItemId);
-                    serviceResult = dispatcher.runSync("createWorkEffortInventoryProduced", serviceContext);
+                    serviceResult = WorkEffortGateway.createWorkEffortInventoryProduced(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2015,7 +2017,7 @@ public class ProductionRunServices {
                     serviceContext = new HashMap<>();
                     serviceContext.put("inventoryItemId", inventoryItemId);
                     serviceContext.put("userLogin", userLogin);
-                    serviceResult = dispatcher.runSync("balanceInventoryItems", serviceContext);
+                    serviceResult = ProductGateway.balanceInventoryItems(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2039,7 +2041,7 @@ public class ProductionRunServices {
                     serviceContext.put("unitCost", unitCost);
                 }
                 serviceContext.put("userLogin", userLogin);
-                Map<String, Object> serviceResult = dispatcher.runSync("createInventoryItem", serviceContext);
+                Map<String, Object> serviceResult = ProductGateway.createInventoryItem(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2051,7 +2053,7 @@ public class ProductionRunServices {
                 serviceContext.put("availableToPromiseDiff", quantity);
                 serviceContext.put("quantityOnHandDiff", quantity);
                 serviceContext.put("userLogin", userLogin);
-                serviceResult = dispatcher.runSync("createInventoryItemDetail", serviceContext);
+                serviceResult = ProductGateway.createInventoryItemDetail(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2059,7 +2061,7 @@ public class ProductionRunServices {
                 serviceContext.put("userLogin", userLogin);
                 serviceContext.put("workEffortId", productionRunId);
                 serviceContext.put("inventoryItemId", inventoryItemId);
-                serviceResult = dispatcher.runSync("createWorkEffortInventoryProduced", serviceContext);
+                serviceResult = WorkEffortGateway.createWorkEffortInventoryProduced(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2072,7 +2074,7 @@ public class ProductionRunServices {
                     serviceContext.put("priorityOrderId", orderItem.getString("orderId"));
                     serviceContext.put("priorityOrderItemSeqId", orderItem.getString("orderItemSeqId"));
                 }
-                serviceResult = dispatcher.runSync("balanceInventoryItems", serviceContext);
+                serviceResult = ProductGateway.balanceInventoryItems(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2086,7 +2088,7 @@ public class ProductionRunServices {
         serviceContext.put("actualCompletionDate", UtilDateTime.nowTimestamp());
         serviceContext.put("userLogin", userLogin);
         try {
-            Map<String, Object> serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+            Map<String, Object> serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -2220,7 +2222,7 @@ public class ProductionRunServices {
                     serviceContext.put("uomId", uomId);
                     serviceContext.put("userLogin", userLogin);
                     serviceContext.put("isReturned", isReturned);
-                    Map<String, Object> serviceResult = dispatcher.runSync("createInventoryItem", serviceContext);
+                    Map<String, Object> serviceResult = ProductGateway.createInventoryItem(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2231,7 +2233,7 @@ public class ProductionRunServices {
                     serviceContext.put("availableToPromiseDiff", BigDecimal.ONE);
                     serviceContext.put("quantityOnHandDiff", BigDecimal.ONE);
                     serviceContext.put("userLogin", userLogin);
-                    serviceResult = dispatcher.runSync("createInventoryItemDetail", serviceContext);
+                    serviceResult = ProductGateway.createInventoryItemDetail(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2239,7 +2241,7 @@ public class ProductionRunServices {
                     serviceContext.put("userLogin", userLogin);
                     serviceContext.put("workEffortId", productionRunTaskId);
                     serviceContext.put("inventoryItemId", inventoryItemId);
-                    serviceResult = dispatcher.runSync("createWorkEffortInventoryProduced", serviceContext);
+                    serviceResult = WorkEffortGateway.createWorkEffortInventoryProduced(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2248,7 +2250,7 @@ public class ProductionRunServices {
                     serviceContext = new HashMap<>();
                     serviceContext.put("inventoryItemId", inventoryItemId);
                     serviceContext.put("userLogin", userLogin);
-                    serviceResult = dispatcher.runSync("balanceInventoryItems", serviceContext);
+                    serviceResult = ProductGateway.balanceInventoryItems(dispatcher, serviceContext);
                     if (ServiceUtil.isError(serviceResult)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                     }
@@ -2272,7 +2274,7 @@ public class ProductionRunServices {
                 serviceContext.put("uomId", uomId);
                 serviceContext.put("userLogin", userLogin);
                 serviceContext.put("isReturned", isReturned);
-                Map<String, Object> serviceResult = dispatcher.runSync("createInventoryItem", serviceContext);
+                Map<String, Object> serviceResult = ProductGateway.createInventoryItem(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2284,7 +2286,7 @@ public class ProductionRunServices {
                 serviceContext.put("availableToPromiseDiff", quantity);
                 serviceContext.put("quantityOnHandDiff", quantity);
                 serviceContext.put("userLogin", userLogin);
-                serviceResult = dispatcher.runSync("createInventoryItemDetail", serviceContext);
+                serviceResult = ProductGateway.createInventoryItemDetail(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2292,7 +2294,7 @@ public class ProductionRunServices {
                 serviceContext.put("userLogin", userLogin);
                 serviceContext.put("workEffortId", productionRunTaskId);
                 serviceContext.put("inventoryItemId", inventoryItemId);
-                serviceResult = dispatcher.runSync("createWorkEffortInventoryProduced", serviceContext);
+                serviceResult = WorkEffortGateway.createWorkEffortInventoryProduced(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2301,7 +2303,7 @@ public class ProductionRunServices {
                 serviceContext = new HashMap<>();
                 serviceContext.put("inventoryItemId", inventoryItemId);
                 serviceContext.put("userLogin", userLogin);
-                serviceResult = dispatcher.runSync("balanceInventoryItems", serviceContext);
+                serviceResult = ProductGateway.balanceInventoryItems(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2516,7 +2518,7 @@ public class ProductionRunServices {
                         "userLogin", userLogin);
                 serviceContext.put("hours", addTaskTime.divide(new BigDecimal(3600000), 6, ROUNDING).doubleValue());
                 serviceContext.put("comments", "Task time added via Declaration");
-                Map<String, Object> serviceResult = dispatcher.runSync("createTimeEntry", serviceContext);
+                Map<String, Object> serviceResult = WorkEffortGateway.createTimeEntry(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -2547,7 +2549,7 @@ public class ProductionRunServices {
             serviceContext.put("quantityProduced", totalQuantityProduced);
             serviceContext.put("quantityRejected", totalQuantityRejected);
             serviceContext.put("userLogin", userLogin);
-            Map<String, Object> serviceResult = dispatcher.runSync("updateWorkEffort", serviceContext);
+            Map<String, Object> serviceResult = WorkEffortGateway.updateWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -2578,7 +2580,7 @@ public class ProductionRunServices {
             return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingRequirementNotExists", locale));
         }
         try {
-            Map<String, Object> serviceResult = dispatcher.runSync("updateRequirement",
+            Map<String, Object> serviceResult = OrderGateway.updateRequirement(dispatcher,
                     UtilMisc.<String, Object>toMap("requirementId", requirementId,
                             "statusId", "REQ_APPROVED", "requirementTypeId", requirement.getString("requirementTypeId"),
                             "userLogin", userLogin));
@@ -2695,7 +2697,7 @@ public class ProductionRunServices {
         }
         String instanceProductId = null;
         try {
-            instanceProductId = ProductWorker.getAggregatedInstanceId(delegator, config.getProduct().getString("productId"), config.getConfigId());
+            instanceProductId = ProductGateway.getAggregatedInstanceId(delegator, config.getProduct().getString("productId"), config.getConfigId());
         } catch (Exception e) {
             return ServiceUtil.returnError(e.getMessage());
         }
@@ -2793,7 +2795,7 @@ public class ProductionRunServices {
                     serviceContext.put("userLogin", userLogin);
                     serviceContext.put("noteParty", userLogin.getString("partyId"));
                     try {
-                        serviceResult = dispatcher.runSync("createWorkEffortNote", serviceContext);
+                        serviceResult = WorkEffortGateway.createWorkEffortNote(dispatcher, serviceContext);
                         if (ServiceUtil.isError(serviceResult)) {
                             return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                         }
@@ -2882,7 +2884,7 @@ public class ProductionRunServices {
         try {
             // first figure out how much of this product we already have in stock (ATP)
             BigDecimal existingAtp = BigDecimal.ZERO;
-            Map<String, Object> tmpResults = dispatcher.runSync("getInventoryAvailableByFacility",
+            Map<String, Object> tmpResults = ProductGateway.getInventoryAvailableByFacility(dispatcher,
                     UtilMisc.<String, Object>toMap("productId", orderItem.getString("productId"),
                             "facilityId", facilityId, "userLogin", userLogin));
             if (ServiceUtil.isError(tmpResults)) {
@@ -2908,7 +2910,7 @@ public class ProductionRunServices {
                 serviceContext.put("productId", orderItem.getString("productId"));
                 serviceContext.put("facilityId", facilityId);
                 serviceContext.put("userLogin", userLogin);
-                Map<String, Object> serviceResult = dispatcher.runSync("getMktgPackagesAvailable", serviceContext);
+                Map<String, Object> serviceResult = ProductGateway.getMktgPackagesAvailable(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }
@@ -3525,7 +3527,7 @@ public class ProductionRunServices {
             serviceContext.put("facilityId", inventoryItem.getString("facilityId"));
             serviceContext.put("estimatedStartDate", now);
             serviceContext.put("userLogin", userLogin);
-            Map<String, Object> serviceResult = dispatcher.runSync("createWorkEffort", serviceContext);
+            Map<String, Object> serviceResult = WorkEffortGateway.createWorkEffort(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -3555,7 +3557,7 @@ public class ProductionRunServices {
                     "currencyUomId", inventoryItem.getString("currencyUomId"),
                     "costComponentTypePrefix", "EST_STD",
                     "userLogin", userLogin);
-            serviceResult = dispatcher.runSync("getProductCost", serviceContext);
+            serviceResult = ProductGateway.getProductCost(dispatcher, serviceContext);
             if (ServiceUtil.isError(serviceResult)) {
                 return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
             }
@@ -3595,7 +3597,7 @@ public class ProductionRunServices {
                         "currencyUomId", inventoryItem.getString("currencyUomId"),
                         "costComponentTypePrefix", "EST_STD",
                         "userLogin", userLogin);
-                serviceResult = dispatcher.runSync("getProductCost", serviceContext);
+                serviceResult = ProductGateway.getProductCost(dispatcher, serviceContext);
                 if (ServiceUtil.isError(serviceResult)) {
                     return ServiceUtil.returnError(ServiceUtil.getErrorMessage(serviceResult));
                 }

@@ -37,6 +37,7 @@ import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtil;
+import org.apache.ofbiz.manufacturing.boundary.ProductGateway;
 import org.apache.ofbiz.manufacturing.mrp.ProposedOrder;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -294,7 +295,7 @@ public class BOMNode {
                         Map<String, Object> storeResult = null;
                         GenericValue variantProduct = null;
                         try {
-                            storeResult = dispatcher.runSync("getProductVariant", context);
+                            storeResult = ProductGateway.getProductVariant(dispatcher, context);
                             if (ServiceUtil.isError(storeResult)) {
                                 String errorMessage = ServiceUtil.getErrorMessage(storeResult);
                                 Debug.logError(errorMessage, MODULE);
@@ -929,4 +930,3 @@ public class BOMNode {
     }
 
 }
-
