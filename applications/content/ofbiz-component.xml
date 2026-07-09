@@ -21,6 +21,12 @@ under the License.
 <ofbiz-component name="content"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/ofbiz-component.xsd">
+    <!-- The content webapp resolves the party lookup screen (LookupPartyName) at runtime,
+         e.g. from the advanced content search form (ContentSearchOptions.ftl) via the
+         controller.xml view-map to component://party/widget/partymgr/LookupScreens.xml.
+         Declaring the dependency makes this existing runtime coupling explicit and keeps
+         party loaded before content. -->
+    <depends-on component-name="party"/>
     <resource-loader name="main" type="component"/>
     <classpath type="dir" location="config"/>
 
@@ -42,7 +48,7 @@ under the License.
     <service-resource type="model" loader="main" location="servicedef/services_website.xml"/>
     <service-resource type="eca" loader="main" location="servicedef/secas.xml"/>
     <service-resource type="mca" loader="main" location="servicedef/mca.xml"/>
-    
+
     <test-suite loader="main" location="testdef/ContentTests.xml"/>
 
     <webapp name="content"
@@ -53,7 +59,7 @@ under the License.
         base-permission="OFBTOOLS,CONTENTMGR"
         app-shortcut-screen="component://content/widget/CommonScreens.xml#ShortcutApp"
         mount-point="/content"/>
-    
+
     <webapp name="contentimages"
         title="Content Images"
         server="default-server"
