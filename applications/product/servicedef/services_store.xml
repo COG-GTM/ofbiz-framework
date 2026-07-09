@@ -24,6 +24,53 @@ under the License.
     <vendor>OFBiz</vendor>
     <version>1.0</version>
 
+    <!-- Product Store read services (Service Engine wrappers around ProductStoreWorker, used to decouple other
+         components such as order from the product internal Java classes) -->
+    <service name="getProductStore" engine="java"
+            location="org.apache.ofbiz.product.store.ProductStoreServices" invoke="getProductStore">
+        <description>Get a ProductStore GenericValue by productStoreId</description>
+        <attribute name="productStoreId" type="String" mode="IN" optional="false"/>
+        <attribute name="productStore" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+    <service name="getProductStorePaymentSetting" engine="java"
+            location="org.apache.ofbiz.product.store.ProductStoreServices" invoke="getProductStorePaymentSetting">
+        <description>Get the ProductStorePaymentSetting for a store and payment method type</description>
+        <attribute name="productStoreId" type="String" mode="IN" optional="false"/>
+        <attribute name="paymentMethodTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="paymentServiceTypeEnumId" type="String" mode="IN" optional="true"/>
+        <attribute name="anyServiceType" type="Boolean" mode="IN" optional="true"/>
+        <attribute name="paymentSetting" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+    <service name="getProductStorePaymentProperties" engine="java"
+            location="org.apache.ofbiz.product.store.ProductStoreServices" invoke="getProductStorePaymentProperties">
+        <description>Get the payment properties path configured for a store and payment method type</description>
+        <attribute name="productStoreId" type="String" mode="IN" optional="false"/>
+        <attribute name="paymentMethodTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="paymentServiceTypeEnumId" type="String" mode="IN" optional="true"/>
+        <attribute name="anyServiceType" type="Boolean" mode="IN" optional="true"/>
+        <attribute name="paymentProperties" type="String" mode="OUT" optional="true"/>
+    </service>
+    <service name="getProductStoreShipmentMethod" engine="java"
+            location="org.apache.ofbiz.product.store.ProductStoreServices" invoke="getProductStoreShipmentMethod">
+        <description>Get the ProductStoreShipmentMeth for a store, shipment method type and carrier</description>
+        <attribute name="productStoreId" type="String" mode="IN" optional="false"/>
+        <attribute name="shipmentMethodTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="carrierPartyId" type="String" mode="IN" optional="true"/>
+        <attribute name="carrierRoleTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="shipmentMethod" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+    <service name="getAvailableStoreShippingMethods" engine="java"
+            location="org.apache.ofbiz.product.store.ProductStoreServices" invoke="getAvailableStoreShippingMethods">
+        <description>Get the list of available ProductStoreShipmentMethView records applicable to the given shipment</description>
+        <attribute name="productStoreId" type="String" mode="IN" optional="false"/>
+        <attribute name="shippingAddress" type="org.apache.ofbiz.entity.GenericValue" mode="IN" optional="true"/>
+        <attribute name="itemSizes" type="java.util.List" mode="IN" optional="true"/>
+        <attribute name="featureIdMap" type="java.util.Map" mode="IN" optional="true"/>
+        <attribute name="weight" type="java.math.BigDecimal" mode="IN" optional="true"/>
+        <attribute name="orderTotal" type="java.math.BigDecimal" mode="IN" optional="true"/>
+        <attribute name="shippingMethods" type="java.util.List" mode="OUT" optional="true"/>
+    </service>
+
     <!-- Product Store Services -->
     <service name="createProductStore" default-entity-name="ProductStore" engine="groovy"
             location="component://product/src/main/groovy/org/apache/ofbiz/product/product/store/ProductStoreServices.groovy" invoke="createProductStore">

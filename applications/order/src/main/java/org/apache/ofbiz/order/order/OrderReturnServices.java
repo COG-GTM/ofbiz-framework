@@ -1341,7 +1341,7 @@ public class OrderReturnServices {
 
                 // Figure out if EXT_PAYPAL should be considered as an electronic type
                 if (productStore != null) {
-                    ExpressCheckoutEvents.CheckoutType payPalType = ExpressCheckoutEvents.determineCheckoutType(delegator,
+                    ExpressCheckoutEvents.CheckoutType payPalType = ExpressCheckoutEvents.determineCheckoutType(dispatcher,
                             productStore.getString("productStoreId"));
                     if (!payPalType.equals(ExpressCheckoutEvents.CheckoutType.NONE)) {
                         electronicTypes.add("EXT_PAYPAL");

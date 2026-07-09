@@ -22,6 +22,7 @@ package org.apache.ofbiz.party.contact;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1008,6 +1009,48 @@ public class ContactMechServices {
 
         Map<String, Object> result = ServiceUtil.returnSuccess();
         result.put("verifyHash", verifyHash);
+        return result;
+    }
+
+    /**
+     * Service wrapper exposing {@link ContactMechWorker#getFacilityContactMechByPurpose} through the Service Engine so
+     * that callers outside the party component do not need to depend on the party internal Java classes directly.
+     */
+    public static Map<String, Object> getFacilityContactMechByPurpose(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String facilityId = (String) context.get("facilityId");
+        List<String> purposeTypes = UtilGenerics.cast(context.get("purposeTypes"));
+        GenericValue contactMech = ContactMechWorker.getFacilityContactMechByPurpose(delegator, facilityId, purposeTypes);
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("contactMech", contactMech);
+        return result;
+    }
+
+    /**
+     * Service wrapper exposing {@link ContactHelper#getContactMechByPurpose} through the Service Engine so that callers
+     * outside the party component do not need to depend on the party internal Java classes directly.
+     */
+    public static Map<String, Object> getContactMechByPurpose(DispatchContext ctx, Map<String, ? extends Object> context) {
+        GenericValue party = (GenericValue) context.get("party");
+        String contactMechPurposeTypeId = (String) context.get("contactMechPurposeTypeId");
+        boolean includeOld = Boolean.TRUE.equals(context.get("includeOld"));
+        Collection<GenericValue> contactMechs = ContactHelper.getContactMechByPurpose(party, contactMechPurposeTypeId, includeOld);
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("contactMechs", contactMechs);
+        return result;
+    }
+
+    /**
+     * Service wrapper exposing {@link ContactHelper#getContactMechByType} through the Service Engine so that callers
+     * outside the party component do not need to depend on the party internal Java classes directly.
+     */
+    public static Map<String, Object> getContactMechByType(DispatchContext ctx, Map<String, ? extends Object> context) {
+        GenericValue party = (GenericValue) context.get("party");
+        String contactMechTypeId = (String) context.get("contactMechTypeId");
+        boolean includeOld = Boolean.TRUE.equals(context.get("includeOld"));
+        Collection<GenericValue> contactMechs = ContactHelper.getContactMechByType(party, contactMechTypeId, includeOld);
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("contactMechs", contactMechs);
         return result;
     }
 

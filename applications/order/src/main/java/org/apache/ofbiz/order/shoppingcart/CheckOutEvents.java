@@ -44,8 +44,6 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.marketing.tracking.TrackingCodeEvents;
 import org.apache.ofbiz.order.order.OrderReadHelper;
-import org.apache.ofbiz.party.party.PartyWorker;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.service.ModelService;
@@ -61,6 +59,16 @@ public class CheckOutEvents {
     private static final String MODULE = CheckOutEvents.class.getName();
     private static final String RES_ERROR = "OrderErrorUiLabels";
     private static final String DEFAULT_INIT_CHECKOUT_PAGE = "shippingaddress";
+
+    private static GenericValue getProductStore(LocalDispatcher dispatcher, String productStoreId) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getProductStore", UtilMisc.toMap("productStoreId", productStoreId));
+            return (GenericValue) result.get("productStore");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
 
     public static String cartNotEmpty(HttpServletRequest request, HttpServletResponse response) {
         ShoppingCart cart = ShoppingCartEvents.getCartObject(request);
@@ -549,7 +557,7 @@ public class CheckOutEvents {
         if (cart == null) {
             return false;
         }
-        GenericValue productStore = ProductStoreWorker.getProductStore(cart.getProductStoreId(), delegator);
+        GenericValue productStore = getProductStore(cart.getDispatcher(), cart.getProductStoreId());
         return !(productStore == null || productStore.get("explodeOrderItems") == null)
                 && productStore.getBoolean("explodeOrderItems");
     }
@@ -616,7 +624,7 @@ public class CheckOutEvents {
         boolean holdOrder = cart.getHoldOrder();
 
         // load the ProductStore settings
-        GenericValue productStore = ProductStoreWorker.getProductStore(cart.getProductStoreId(), delegator);
+        GenericValue productStore = getProductStore(dispatcher, cart.getProductStoreId());
         Map<String, Object> callResult = checkOutHelper.processPayment(productStore, userLogin, false, holdOrder);
 
         if (ServiceUtil.isError(callResult)) {
@@ -666,12 +674,18 @@ public class CheckOutEvents {
         Delegator delegator = (Delegator) request.getAttribute("delegator");
         LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
         String orderPartyId = cart.getOrderPartyId();
-        GenericValue userLogin = PartyWorker.findPartyLatestUserLogin(orderPartyId, delegator);
+        GenericValue userLogin = null;
+        try {
+            Map<String, Object> userLoginResult = dispatcher.runSync("getPartyLatestUserLogin", UtilMisc.toMap("partyId", orderPartyId));
+            userLogin = (GenericValue) userLoginResult.get("foundUserLogin");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+        }
         GenericValue currentUser = (GenericValue) session.getAttribute("userLogin");
         String result;
 
         // Load the properties store
-        GenericValue productStore = ProductStoreWorker.getProductStore(cart.getProductStoreId(), delegator);
+        GenericValue productStore = getProductStore(dispatcher, cart.getProductStoreId());
         CheckOutHelper checkOutHelper = new CheckOutHelper(dispatcher, delegator, cart);
         Map<String, Object> callResult = checkOutHelper.failedDenylistCheck(userLogin, productStore);
 
@@ -699,7 +713,7 @@ public class CheckOutEvents {
     public static String checkExternalCheckout(HttpServletRequest request, HttpServletResponse response) {
         Delegator delegator = (Delegator) request.getAttribute("delegator");
         ShoppingCart cart = ShoppingCartEvents.getCartObject(request);
-        GenericValue productStore = ProductStoreWorker.getProductStore(cart.getProductStoreId(), delegator);
+        GenericValue productStore = getProductStore(cart.getDispatcher(), cart.getProductStoreId());
         String paymentMethodTypeId = request.getParameter("paymentMethodTypeId");
         if ("EXT_PAYPAL".equals(paymentMethodTypeId) || cart.getPaymentMethodTypeIds().contains("EXT_PAYPAL")) {
             try {

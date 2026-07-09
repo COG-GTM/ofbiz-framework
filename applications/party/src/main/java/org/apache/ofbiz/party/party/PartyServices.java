@@ -2683,4 +2683,17 @@ public class PartyServices {
                 UtilMisc.toMap("partiesCreated", partiesCreated), locale));
         return result;
     }
+
+    /**
+     * Service wrapper exposing {@link PartyWorker#findPartyLatestUserLogin} through the Service Engine so that callers
+     * outside the party component do not need to depend on the party internal Java classes directly.
+     */
+    public static Map<String, Object> getPartyLatestUserLogin(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        GenericValue userLogin = PartyWorker.findPartyLatestUserLogin(partyId, delegator);
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("foundUserLogin", userLogin);
+        return result;
+    }
 }

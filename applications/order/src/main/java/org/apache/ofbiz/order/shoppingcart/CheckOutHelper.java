@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -57,9 +58,6 @@ import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.order.shoppingcart.product.ProductPromoWorker;
 import org.apache.ofbiz.order.shoppingcart.shipping.ShippingEvents;
 import org.apache.ofbiz.order.thirdparty.paypal.ExpressCheckoutEvents;
-import org.apache.ofbiz.party.contact.ContactHelper;
-import org.apache.ofbiz.party.contact.ContactMechWorker;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.service.ModelService;
@@ -85,6 +83,61 @@ public class CheckOutHelper {
         this.delegator = delegator;
         this.dispatcher = dispatcher;
         this.cart = cart;
+    }
+
+    private GenericValue getProductStore(String productStoreId) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getProductStore", UtilMisc.toMap("productStoreId", productStoreId));
+            return (GenericValue) result.get("productStore");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
+
+    private String getProductStorePaymentProperties(String productStoreId, String paymentMethodTypeId, boolean anyServiceType) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getProductStorePaymentProperties",
+                    UtilMisc.toMap("productStoreId", productStoreId, "paymentMethodTypeId", paymentMethodTypeId,
+                            "anyServiceType", anyServiceType));
+            return (String) result.get("paymentProperties");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return "payment.properties";
+        }
+    }
+
+    private GenericValue getFacilityContactMechByPurpose(String facilityId, List<String> purposeTypes) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getFacilityContactMechByPurpose",
+                    UtilMisc.toMap("facilityId", facilityId, "purposeTypes", purposeTypes));
+            return (GenericValue) result.get("contactMech");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
+
+    private Collection<GenericValue> getContactMechByType(GenericValue party, String contactMechTypeId, boolean includeOld) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getContactMechByType",
+                    UtilMisc.toMap("party", party, "contactMechTypeId", contactMechTypeId, "includeOld", includeOld));
+            return UtilGenerics.cast(result.get("contactMechs"));
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
+    }
+
+    private Collection<GenericValue> getContactMechByPurpose(GenericValue party, String contactMechPurposeTypeId, boolean includeOld) {
+        try {
+            Map<String, Object> result = dispatcher.runSync("getContactMechByPurpose",
+                    UtilMisc.toMap("party", party, "contactMechPurposeTypeId", contactMechPurposeTypeId, "includeOld", includeOld));
+            return UtilGenerics.cast(result.get("contactMechs"));
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return null;
+        }
     }
 
     /**
@@ -737,7 +790,7 @@ public class CheckOutHelper {
                     // do something tricky here: run as the "system" user
                     // that can actually create and run a production run
                     GenericValue permUserLogin = EntityQuery.use(delegator).from("UserLogin").where("userLoginId", "system").cache().queryOne();
-                    GenericValue productStore = ProductStoreWorker.getProductStore(productStoreId, delegator);
+                    GenericValue productStore = getProductStore(productStoreId);
                     GenericValue product = EntityQuery.use(delegator).from("Product").where("productId", productId).queryOne();
                     if (EntityTypeUtil.hasParentType(delegator, "ProductType", "productTypeId", product.getString("productTypeId"), "parentTypeId",
                             "AGGREGATED")) {
@@ -816,14 +869,14 @@ public class CheckOutHelper {
 
         // create order contact mechs for the email address(s)
         if (party != null) {
-            Iterator<GenericValue> emailIter = UtilMisc.toIterator(ContactHelper.getContactMechByType(party, "EMAIL_ADDRESS", false));
+            Iterator<GenericValue> emailIter = UtilMisc.toIterator(getContactMechByType(party, "EMAIL_ADDRESS", false));
             while (emailIter != null && emailIter.hasNext()) {
                 GenericValue email = emailIter.next();
                 GenericValue orderContactMech = this.delegator.makeValue("OrderContactMech",
                         UtilMisc.toMap("orderId", orderId, "contactMechId", email.getString("contactMechId"), "contactMechPurposeTypeId",
                                 "ORDER_EMAIL"));
                 toBeStored.add(orderContactMech);
-                if (UtilValidate.isEmpty(ContactHelper.getContactMechByPurpose(party, "ORDER_EMAIL", false))) {
+                if (UtilValidate.isEmpty(getContactMechByPurpose(party, "ORDER_EMAIL", false))) {
                     GenericValue partyContactMechPurpose = this.delegator.makeValue("PartyContactMechPurpose",
                             UtilMisc.toMap("partyId", party.getString("partyId"), "contactMechId", email.getString("contactMechId"),
                                     "contactMechPurposeTypeId", "ORDER_EMAIL", "fromDate", UtilDateTime.nowTimestamp()));
@@ -994,7 +1047,7 @@ public class CheckOutHelper {
         if (shipAddress == null) {
             // face-to-face order; use the facility address
             if (originFacilityId != null) {
-                GenericValue facilityContactMech = ContactMechWorker.getFacilityContactMechByPurpose(delegator, originFacilityId,
+                GenericValue facilityContactMech = getFacilityContactMechByPurpose(originFacilityId,
                         UtilMisc.toList("SHIP_ORIG_LOCATION", "PRIMARY_LOCATION"));
                 if (facilityContactMech != null) {
                     try {
@@ -1894,13 +1947,13 @@ public class CheckOutHelper {
      */
     public void validateGiftCardAmounts() {
         // get the product store
-        GenericValue productStore = ProductStoreWorker.getProductStore(cart.getProductStoreId(), delegator);
+        GenericValue productStore = getProductStore(cart.getProductStoreId());
         if (productStore != null && !"Y".equalsIgnoreCase(productStore.getString("checkGcBalance"))) {
             return;
         }
 
         // get the payment config
-        String paymentConfig = ProductStoreWorker.getProductStorePaymentProperties(delegator, cart.getProductStoreId(), "GIFT_CARD", null, true);
+        String paymentConfig = getProductStorePaymentProperties(cart.getProductStoreId(), "GIFT_CARD", true);
         String giftCardType = EntityUtilProperties.getPropertyValue(paymentConfig, "", "ofbiz", delegator);
         String balanceField = null;
 

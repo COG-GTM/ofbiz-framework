@@ -48,8 +48,6 @@ import org.apache.ofbiz.entity.util.EntityUtilProperties;
 import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.order.shoppingcart.ShoppingCart;
 import org.apache.ofbiz.order.shoppingcart.product.ProductPromoWorker;
-import org.apache.ofbiz.party.contact.ContactMechWorker;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.apache.ofbiz.service.ModelService;
@@ -217,8 +215,17 @@ public class ShippingEvents {
         }
 
         // check for an external service call
-        GenericValue storeShipMethod = ProductStoreWorker.getProductStoreShipmentMethod(delegator, productStoreId,
-                shipmentMethodTypeId, carrierPartyId, carrierRoleTypeId);
+        GenericValue storeShipMethod;
+        try {
+            Map<String, Object> storeShipMethodResult = dispatcher.runSync("getProductStoreShipmentMethod",
+                    UtilMisc.toMap("productStoreId", productStoreId, "shipmentMethodTypeId", shipmentMethodTypeId,
+                            "carrierPartyId", carrierPartyId, "carrierRoleTypeId", carrierRoleTypeId));
+            storeShipMethod = (GenericValue) storeShipMethodResult.get("shipmentMethod");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            errorMessageList.add("No applicable shipment method found.");
+            return ServiceUtil.returnError(errorMessageList);
+        }
 
         if (storeShipMethod == null) {
             errorMessageList.add("No applicable shipment method found.");
@@ -421,10 +428,17 @@ public class ShippingEvents {
         return originAddress != null ? originAddress : generalAddress;
     }
 
-    public static GenericValue getShippingOriginContactMechFromFacility(Delegator delegator, String facilityId) throws GeneralException {
-        GenericValue address = ContactMechWorker.getFacilityContactMechByPurpose(delegator, facilityId, UtilMisc.toList("SHIP_ORIG_LOCATION"));
+    public static GenericValue getShippingOriginContactMechFromFacility(LocalDispatcher dispatcher, String facilityId) throws GeneralException {
+        GenericValue address = getFacilityContactMechByPurpose(dispatcher, facilityId, UtilMisc.toList("SHIP_ORIG_LOCATION"));
         if (address != null) return address;
-        return ContactMechWorker.getFacilityContactMechByPurpose(delegator, facilityId, UtilMisc.toList("GENERAL_LOCATION"));
+        return getFacilityContactMechByPurpose(dispatcher, facilityId, UtilMisc.toList("GENERAL_LOCATION"));
+    }
+
+    private static GenericValue getFacilityContactMechByPurpose(LocalDispatcher dispatcher, String facilityId, List<String> purposeTypes)
+            throws GeneralException {
+        Map<String, Object> result = dispatcher.runSync("getFacilityContactMechByPurpose",
+                UtilMisc.toMap("facilityId", facilityId, "purposeTypes", purposeTypes));
+        return (GenericValue) result.get("contactMech");
     }
 
     private static List<String> getGeoIdFromPostalContactMech(Delegator delegator, GenericValue address) {

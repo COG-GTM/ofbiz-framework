@@ -24,6 +24,32 @@ under the License.
     <vendor>OFBiz</vendor>
     <version>1.0</version>
 
+    <!-- contact mech read services (Service Engine wrappers used to decouple other components such as order from the
+         party internal Java classes) -->
+    <service name="getFacilityContactMechByPurpose" engine="java"
+            location="org.apache.ofbiz.party.contact.ContactMechServices" invoke="getFacilityContactMechByPurpose">
+        <description>Get the ContactMech for a facility matching one of the given purpose types (in priority order)</description>
+        <attribute name="facilityId" type="String" mode="IN" optional="false"/>
+        <attribute name="purposeTypes" type="java.util.List" mode="IN" optional="false"/>
+        <attribute name="contactMech" type="org.apache.ofbiz.entity.GenericValue" mode="OUT" optional="true"/>
+    </service>
+    <service name="getContactMechByPurpose" engine="java"
+            location="org.apache.ofbiz.party.contact.ContactMechServices" invoke="getContactMechByPurpose">
+        <description>Get the collection of ContactMech for a party matching a contact mech purpose type</description>
+        <attribute name="party" type="org.apache.ofbiz.entity.GenericValue" mode="IN" optional="false"/>
+        <attribute name="contactMechPurposeTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="includeOld" type="Boolean" mode="IN" optional="true"/>
+        <attribute name="contactMechs" type="java.util.Collection" mode="OUT" optional="true"/>
+    </service>
+    <service name="getContactMechByType" engine="java"
+            location="org.apache.ofbiz.party.contact.ContactMechServices" invoke="getContactMechByType">
+        <description>Get the collection of ContactMech for a party matching a contact mech type</description>
+        <attribute name="party" type="org.apache.ofbiz.entity.GenericValue" mode="IN" optional="false"/>
+        <attribute name="contactMechTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="includeOld" type="Boolean" mode="IN" optional="true"/>
+        <attribute name="contactMechs" type="java.util.Collection" mode="OUT" optional="true"/>
+    </service>
+
     <!-- contact mech services -->
     <service name="createContactMech" default-entity-name="ContactMech" engine="entity-auto" invoke="create" auth="true">
         <description>Create a new ContactMech Record</description>
