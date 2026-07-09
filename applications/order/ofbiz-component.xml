@@ -21,16 +21,23 @@ under the License.
 <ofbiz-component name="order"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/ofbiz-component.xsd">
+    <depends-on component-name="party"/>
+    <depends-on component-name="product"/>
     <resource-loader name="main" type="component"/>
     <classpath type="dir" location="config"/>
 
+    <entity-resource type="model" reader-name="main" loader="main" location="entitydef/order-entitymodel.xml"/>
+    <entity-resource type="model" reader-name="main" loader="main" location="entitydef/shipment-entitymodel.xml"/>
     <entity-resource type="model" reader-name="main" loader="main" location="entitydef/entitymodel_view.xml"/>
     <entity-resource type="eca" reader-name="main" loader="main" location="entitydef/eecas.xml"/>
 
+    <entity-resource type="data" reader-name="seed" loader="main" location="data/seed/OrderSeedData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/OrderTypeData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/OrderPortletData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/OrderSecurityPermissionSeedData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/PurchaseOrderShippingSeedData.xml"/>
+
+    <entity-resource type="data" reader-name="demo" loader="main" location="data/demo/OrderDemoData.xml"/>
 
     <entity-resource type="data" reader-name="seed-initial" loader="main" location="data/OrderScheduledServices.xml"/>
     <entity-resource type="data" reader-name="seed-initial" loader="main" location="data/OrderSystemPropertyData.xml"/>
@@ -66,4 +73,3 @@ under the License.
         base-permission="OFBTOOLS,ORDERMGR"
         mount-point="/ordermgr"/>
 </ofbiz-component>
-

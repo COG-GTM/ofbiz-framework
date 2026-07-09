@@ -23,9 +23,12 @@ under the License.
     <load-component component-location="datamodel"/>
     <load-component component-location="party"/>
     <load-component component-location="securityext"/>
+<!-- product is loaded before content and workeffort because ContentSeedData and
+     WorkEffortSeedData reference Status entities (e.g. IM_PENDING) defined in
+     ProductSeedData; this preserves the original datamodel seed load order. -->
+    <load-component component-location="product"/>
     <load-component component-location="content"/>
     <load-component component-location="workeffort"/>
-    <load-component component-location="product"/>
     <load-component component-location="manufacturing"/>
     <load-component component-location="accounting"/>
     <load-component component-location="humanres"/>

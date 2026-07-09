@@ -21,8 +21,13 @@ under the License.
 <ofbiz-component name="securityext"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/ofbiz-component.xsd">
+    <depends-on component-name="party"/>
     <resource-loader name="main" type="component"/>
     <classpath type="dir" location="config"/>
-    
+
+    <entity-resource type="data" reader-name="seed" loader="main" location="data/seed/SecurityExtSeedData.xml"/>
+
+    <entity-resource type="data" reader-name="demo" loader="main" location="data/demo/SecurityExtDemoData.xml"/>
+
     <service-resource type="model" loader="main" location="servicedef/services.xml"/>
 </ofbiz-component>

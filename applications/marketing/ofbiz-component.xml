@@ -21,12 +21,18 @@ under the License.
 <ofbiz-component name="marketing"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/ofbiz-component.xsd">
+    <depends-on component-name="party"/>
+    <depends-on component-name="product"/>
     <resource-loader name="main" type="component"/>
     <classpath type="dir" location="config"/>
 
+    <entity-resource type="model" reader-name="main" loader="main" location="entitydef/marketing-entitymodel.xml"/>
+
+    <entity-resource type="data" reader-name="seed" loader="main" location="data/seed/MarketingSeedData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/MarketingSecurityPermissionSeedData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/MarketingPortletData.xml"/>
     <entity-resource type="data" reader-name="seed" loader="main" location="data/SfaPortletData.xml"/>
+    <entity-resource type="data" reader-name="demo" loader="main" location="data/demo/MarketingDemoData.xml"/>
 
     <service-resource type="model" loader="main" location="servicedef/services.xml"/>
     <service-resource type="model" loader="main" location="servicedef/services_contact.xml"/>
@@ -53,4 +59,3 @@ under the License.
         app-shortcut-screen="component://marketing/widget/sfa/CommonScreens.xml#ShortcutApp"
         mount-point="/sfa"/>
 </ofbiz-component>
-
