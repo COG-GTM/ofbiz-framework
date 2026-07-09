@@ -19,7 +19,6 @@
 package org.apache.ofbiz.humanres.category
 
 import org.apache.ofbiz.entity.GenericValue
-import org.apache.ofbiz.party.party.PartyHelper
 
 // PLEASE NOTE : The structure of the list of separateRootType function is according to the JSON_DATA plugin of the jsTree.
 
@@ -43,7 +42,8 @@ if (partyRelationships) {
     //child
     partyRelationships.each {
         completedTreeContext << [partyId: it.partyIdTo,
-                                 groupName: PartyHelper.getPartyName(delegator, it.partyIdTo, false)]
+                                 groupName: runService('getPartyName',
+                                         [partyId: it.partyIdTo, lastNameFirst: false]).partyName]
 
         subTopList << it.partyIdTo
     }

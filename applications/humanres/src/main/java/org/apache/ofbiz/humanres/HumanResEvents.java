@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.UtilGenerics;
+import org.apache.ofbiz.base.util.UtilMisc;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
@@ -35,15 +36,42 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.condition.EntityCondition;
 import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
-import org.apache.ofbiz.party.party.PartyHelper;
+import org.apache.ofbiz.service.GenericServiceException;
+import org.apache.ofbiz.service.LocalDispatcher;
+import org.apache.ofbiz.service.ServiceUtil;
 
 public class HumanResEvents {
     private static final String MODULE = HumanResEvents.class.getName();
     private static final String RES_ERROR = "HumanResErrorUiLabels";
 
+    /**
+     * Resolves a party's formatted display name through the Service Engine ("getPartyName" party service)
+     * instead of a direct call to the party component's Java helper. Mirrors the previous helper semantics
+     * by falling back to the supplied partyId when the name cannot be resolved.
+     */
+    private static String getPartyName(LocalDispatcher dispatcher, String partyId) {
+        if (dispatcher == null) {
+            Debug.logWarning("No dispatcher available to resolve party name for partyId [" + partyId + "]", MODULE);
+            return partyId;
+        }
+        try {
+            Map<String, Object> result = dispatcher.runSync("getPartyName",
+                    UtilMisc.toMap("partyId", partyId, "lastNameFirst", Boolean.FALSE));
+            if (ServiceUtil.isError(result)) {
+                Debug.logError(ServiceUtil.getErrorMessage(result), MODULE);
+                return partyId;
+            }
+            return (String) result.get("partyName");
+        } catch (GenericServiceException e) {
+            Debug.logError(e, MODULE);
+            return partyId;
+        }
+    }
+
     // Please note : the structure of map in this function is according to the JSON data map of the jsTree
     public static String getChildHRCategoryTree(HttpServletRequest request, HttpServletResponse response) {
         Delegator delegator = (Delegator) request.getAttribute("delegator");
+        LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
         String partyId = request.getParameter("partyId");
         String onclickFunction = request.getParameter("onclickFunction");
         String additionParam = request.getParameter("additionParam");
@@ -52,6 +80,7 @@ public class HumanResEvents {
         List<Map<String, Object>> categoryList = new ArrayList<>();
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("delegator", delegator);
+        paramMap.put("dispatcher", dispatcher);
         paramMap.put("partyId", partyId);
         paramMap.put("onclickFunction", onclickFunction);
         paramMap.put("additionParam", additionParam);
@@ -85,6 +114,7 @@ public class HumanResEvents {
 
     private static List<Map<String, Object>> getCurrentEmployeeDetails(Map<String, Object> params) throws GenericEntityException {
         Delegator delegator = (Delegator) params.get("delegator");
+        LocalDispatcher dispatcher = (LocalDispatcher) params.get("dispatcher");
         List<Map<String, Object>> responseList = new ArrayList<>();
         long emplPosCount;
         String partyId = (String) params.get("partyId");
@@ -104,7 +134,7 @@ public class HumanResEvents {
                 if (UtilValidate.isNotEmpty(emlpfillCtxs)) {
                     for (GenericValue emlpfillCtx : emlpfillCtxs) {
                         String memberId = emlpfillCtx.getString("partyId");
-                        title = PartyHelper.getPartyName(delegator, memberId, false);
+                        title = getPartyName(dispatcher, memberId);
                         Map<String, Object> josonMap = new HashMap<>();
                         Map<String, Object> dataMap = new HashMap<>();
                         Map<String, Object> dataAttrMap = new HashMap<>();
@@ -134,6 +164,7 @@ public class HumanResEvents {
 
     private static List<Map<String, Object>> getChildComps(Map<String, Object> params) throws GenericEntityException {
         Delegator delegator = (Delegator) params.get("delegator");
+        LocalDispatcher dispatcher = (LocalDispatcher) params.get("dispatcher");
         Map<String, Object> partyGroup = UtilGenerics.cast(params.get("partyGroup"));
         List<Map<String, Object>> resultList = new ArrayList<>();
         List<GenericValue> childOfComs = null;
@@ -157,7 +188,7 @@ public class HumanResEvents {
                     Map<String, Object> dataAttrMap = new HashMap<>();
                     Map<String, Object> attrMap = new HashMap<>();
                     catId = childOfCom.getString("partyIdTo");
-                    title = PartyHelper.getPartyName(delegator, catId, false);
+                    title = getPartyName(dispatcher, catId);
                     josonMap.put("title", title);
                     //Check child existing
                     List<GenericValue> childOfSubComs = EntityQuery.use(delegator).from("PartyRelationship")

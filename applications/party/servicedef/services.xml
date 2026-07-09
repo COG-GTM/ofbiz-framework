@@ -211,6 +211,18 @@ under the License.
         <attribute name="fullName" type="String" mode="OUT" optional="true"/>
         <attribute name="gender" type="String" mode="OUT" optional="true" />
     </service>
+    <service name="getPartyName" engine="java"
+        location="org.apache.ofbiz.party.party.PartyServices" invoke="getPartyName" auth="false">
+        <description>Get the formatted display name for a party (delegates to PartyHelper.getPartyName).
+            Returns the partyId itself when the party cannot be found.</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="lastNameFirst" type="Boolean" mode="IN" optional="true"><!-- defaults to false --></attribute>
+        <attribute name="partyName" type="String" mode="OUT" optional="true"/>
+    </service>
 
     <service name="createAffiliate" engine="java"
             location="org.apache.ofbiz.party.party.PartyServices" invoke="createAffiliate" auth="false">
@@ -1516,7 +1528,7 @@ under the License.
             </type-validate>
         </override>
     </service>
-    
+
     <!-- send account activated email notification -->
     <service name="sendAccountActivatedEmailNotification" engine="groovy"
             location="component://party/src/main/groovy/org/apache/ofbiz/party/party/PartyServicesScript.groovy" invoke="sendAccountActivatedEmailNotification" auth="false">
