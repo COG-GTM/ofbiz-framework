@@ -19,7 +19,6 @@
 package org.apache.ofbiz.marketing.sfa
 
 import org.apache.ofbiz.entity.util.EntityUtil
-import org.apache.ofbiz.party.contact.ContactHelper
 
 contactInfoList = []
 partyIdFrom = parameters.partyIdFrom
@@ -32,7 +31,8 @@ if (partyIdFrom && partyIdTo) {
         person =  party.getRelatedOne('Person', false)
         contactDetailMap = [partyId: partyId, firstName: person.firstName, lastName: person.lastName]
 
-        generalContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'GENERAL_LOCATION', 'POSTAL_ADDRESS', false))
+        generalContactMech = EntityUtil.getFirst(run(service: 'getPartyContactMechList',
+                with: [partyId: partyId, contactMechPurposeTypeId: 'GENERAL_LOCATION', contactMechTypeId: 'POSTAL_ADDRESS']).contactMechList)
         if (generalContactMech) {
             contactDetailMap.addrContactMechId = generalContactMech.contactMechId
             postalAddress = generalContactMech.getRelatedOne('PostalAddress', false)
@@ -50,12 +50,14 @@ if (partyIdFrom && partyIdTo) {
                 contactDetailMap.country = geo.geoName
             }
         }
-        emailContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'PRIMARY_EMAIL', 'EMAIL_ADDRESS', false))
+        emailContactMech = EntityUtil.getFirst(run(service: 'getPartyContactMechList',
+                with: [partyId: partyId, contactMechPurposeTypeId: 'PRIMARY_EMAIL', contactMechTypeId: 'EMAIL_ADDRESS']).contactMechList)
         if (emailContactMech) {
             contactDetailMap.primaryEmail = emailContactMech.infoString
             contactDetailMap.emailContactMechId = emailContactMech.contactMechId
         }
-        phoneContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'PRIMARY_PHONE', 'TELECOM_NUMBER', false))
+        phoneContactMech = EntityUtil.getFirst(run(service: 'getPartyContactMechList',
+                with: [partyId: partyId, contactMechPurposeTypeId: 'PRIMARY_PHONE', contactMechTypeId: 'TELECOM_NUMBER']).contactMechList)
         if (phoneContactMech) {
             contactDetailMap.phoneContactMechId = phoneContactMech.contactMechId
             telecomNumber = phoneContactMech.getRelatedOne('TelecomNumber', false)

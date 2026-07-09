@@ -45,8 +45,6 @@ import org.apache.ofbiz.entity.condition.EntityCondition;
 import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
-import org.apache.ofbiz.party.party.PartyHelper;
-import org.apache.ofbiz.party.party.PartyWorker;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -235,6 +233,7 @@ public class VCard {
     }
 
     public static Map<String, Object> exportVCard(DispatchContext dctx, Map<String, ? extends Object> context) {
+        LocalDispatcher dispatcher = dctx.getDispatcher();
         Delegator delegator = dctx.getDelegator();
         String partyId = (String) context.get("partyId");
         Locale locale = (Locale) context.get("locale");
@@ -252,10 +251,20 @@ public class VCard {
                 }
                 vcard.setStructuredName(structuredName);
             }
-            String fullName = PartyHelper.getPartyName(delegator, partyId, false);
+            Map<String, Object> partyNameResult = dispatcher.runSync("getPartyName",
+                    UtilMisc.toMap("partyId", partyId, "lastNameFirst", false));
+            if (ServiceUtil.isError(partyNameResult)) {
+                return ServiceUtil.returnError(ServiceUtil.getErrorMessage(partyNameResult));
+            }
+            String fullName = (String) partyNameResult.get("partyName");
             vcard.setFormattedName(fullName);
 
-            GenericValue postalAddress = PartyWorker.findPartyLatestPostalAddress(partyId, delegator);
+            Map<String, Object> postalAddressResult = dispatcher.runSync("getPartyLatestPostalAddress",
+                    UtilMisc.toMap("partyId", partyId));
+            if (ServiceUtil.isError(postalAddressResult)) {
+                return ServiceUtil.returnError(ServiceUtil.getErrorMessage(postalAddressResult));
+            }
+            GenericValue postalAddress = (GenericValue) postalAddressResult.get("postalAddress");
             if (postalAddress != null) {
                 Address address = new Address();
                 address.setStreetAddress(postalAddress.getString("address1"));
@@ -275,7 +284,12 @@ public class VCard {
                 vcard.addAddress(address);
             }
 
-            GenericValue telecomNumber = PartyWorker.findPartyLatestTelecomNumber(partyId, delegator);
+            Map<String, Object> telecomNumberResult = dispatcher.runSync("getPartyLatestTelecomNumber",
+                    UtilMisc.toMap("partyId", partyId));
+            if (ServiceUtil.isError(telecomNumberResult)) {
+                return ServiceUtil.returnError(ServiceUtil.getErrorMessage(telecomNumberResult));
+            }
+            GenericValue telecomNumber = (GenericValue) telecomNumberResult.get("telecomNumber");
             if (telecomNumber != null) {
                 Telephone tel = new Telephone(telecomNumber.getString("areaCode") + telecomNumber.getString("contactNumber"));
                 tel.getTypes().add(TelephoneType.WORK);
@@ -283,7 +297,12 @@ public class VCard {
                 //TODO : this can be better set by checking contactMechPurposeTypeId
             }
 
-            GenericValue emailAddress = PartyWorker.findPartyLatestContactMech(partyId, "EMAIL_ADDRESS", delegator);
+            Map<String, Object> emailAddressResult = dispatcher.runSync("getPartyLatestContactMech",
+                    UtilMisc.toMap("partyId", partyId, "contactMechTypeId", "EMAIL_ADDRESS"));
+            if (ServiceUtil.isError(emailAddressResult)) {
+                return ServiceUtil.returnError(ServiceUtil.getErrorMessage(emailAddressResult));
+            }
+            GenericValue emailAddress = (GenericValue) emailAddressResult.get("contactMech");
             if (emailAddress != null && UtilValidate.isNotEmpty(emailAddress.getString("infoString"))) {
                 vcard.addEmail(new Email(emailAddress.getString("infoString")));
             }
@@ -304,7 +323,7 @@ public class VCard {
             Debug.logError(e, MODULE);
             return ServiceUtil.returnError(UtilProperties.getMessage(RES_ERROR,
                     "SfaExportVCardErrorWritingFile", UtilMisc.toMap("errorString", file.getAbsolutePath()), locale));
-        } catch (GenericEntityException e) {
+        } catch (GenericEntityException | GenericServiceException e) {
             return ServiceUtil.returnError(UtilProperties.getMessage(RES_ERROR,
                     "SfaExportVCardError", UtilMisc.toMap("errorString", e.getMessage()), locale));
         }

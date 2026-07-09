@@ -22,6 +22,7 @@ package org.apache.ofbiz.party.contact;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,6 +64,42 @@ public class ContactMechServices {
     private static final String RES_ERROR = "PartyErrorUiLabels";
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    /**
+     * Gets the list of ContactMech records for a party, optionally filtered by purpose and/or contact mech type.
+     * Wraps {@link ContactHelper#getContactMech(GenericValue, String, String, boolean)} so other components can obtain
+     * a party's contact mechs through the Service Engine instead of a direct Java class reference. Results are ordered
+     * by fromDate DESC and, when includeOld is false, filtered to currently active records, mirroring the helper.
+     * @param ctx The DispatchContext that this service is operating in
+     * @param context Map containing the input parameters
+     * @return Map with the result of the service, containing the contactMechList
+     */
+    public static Map<String, Object> getPartyContactMechList(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        String contactMechPurposeTypeId = (String) context.get("contactMechPurposeTypeId");
+        String contactMechTypeId = (String) context.get("contactMechTypeId");
+        Boolean includeOld = (Boolean) context.get("includeOld");
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        List<GenericValue> contactMechList = new LinkedList<>();
+        try {
+            GenericValue party = EntityQuery.use(delegator).from("Party").where("partyId", partyId).queryOne();
+            // Mirror ContactHelper.getContactMech(null, ...) which returns null for a missing party; callers treat an
+            // empty result the same as "no contact mech found", so return an empty list rather than an error.
+            if (party != null) {
+                Collection<GenericValue> contactMechs = ContactHelper.getContactMech(party, contactMechPurposeTypeId,
+                        contactMechTypeId, Boolean.TRUE.equals(includeOld));
+                if (contactMechs != null) {
+                    contactMechList = new LinkedList<>(contactMechs);
+                }
+            }
+        } catch (GenericEntityException e) {
+            Debug.logError(e, MODULE);
+            return ServiceUtil.returnError(e.getMessage());
+        }
+        result.put("contactMechList", contactMechList);
+        return result;
+    }
 
     /**
      * Creates a ContactMech

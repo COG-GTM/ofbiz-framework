@@ -38,7 +38,6 @@ import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
-import org.apache.ofbiz.product.category.CategoryWorker;
 import org.apache.ofbiz.webapp.stats.VisitHandler;
 import org.apache.ofbiz.webapp.website.WebSiteWorker;
 
@@ -324,7 +323,11 @@ public class TrackingCodeEvents {
         String prodCatalogId = trackingCode.getString("prodCatalogId");
         if (UtilValidate.isNotEmpty(prodCatalogId)) {
             session.setAttribute("CURRENT_CATALOG_ID", prodCatalogId);
-            CategoryWorker.setTrail(request, new LinkedList<>());
+            // Reset the product category breadcrumb trail. This previously called
+            // CategoryWorker.setTrail(request, new LinkedList<>()) in the product component; it is inlined here to
+            // avoid a direct cross-module Java dependency. The OFBiz Service Engine cannot host this operation because
+            // services receive a context Map and have no access to the HttpServletRequest/HttpSession.
+            session.setAttribute("_BREAD_CRUMB_TRAIL_", new LinkedList<String>());
         }
 
         // if forward/redirect is needed, do a response.sendRedirect and return null to tell the control servlet to not do any other requests/views

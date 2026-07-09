@@ -2683,4 +2683,77 @@ public class PartyServices {
                 UtilMisc.toMap("partiesCreated", partiesCreated), locale));
         return result;
     }
+
+    /**
+     * Gets the formatted party name.
+     * Wraps {@link PartyHelper#getPartyName(Delegator, String, boolean)} so other components can obtain a party name
+     * through the Service Engine instead of a direct Java class reference.
+     * @param ctx The DispatchContext that this service is operating in.
+     * @param context Map containing the input parameters.
+     * @return Map with the result of the service, containing the formatted partyName.
+     */
+    public static Map<String, Object> getPartyName(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        Boolean lastNameFirst = (Boolean) context.get("lastNameFirst");
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        result.put("partyName", PartyHelper.getPartyName(delegator, partyId, Boolean.TRUE.equals(lastNameFirst)));
+        return result;
+    }
+
+    /**
+     * Gets the latest postal address for a party regardless of purpose.
+     * Wraps {@link PartyWorker#findPartyLatestPostalAddress(String, Delegator)} to preserve the "latest record" semantics
+     * (as opposed to the purpose/primary based getPartyPostalAddress service).
+     * @param ctx The DispatchContext that this service is operating in.
+     * @param context Map containing the input parameters.
+     * @return Map with the result of the service, containing the postalAddress GenericValue when found.
+     */
+    public static Map<String, Object> getPartyLatestPostalAddress(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        GenericValue postalAddress = PartyWorker.findPartyLatestPostalAddress(partyId, delegator);
+        if (postalAddress != null) {
+            result.put("postalAddress", postalAddress);
+        }
+        return result;
+    }
+
+    /**
+     * Gets the latest telecom number for a party regardless of purpose.
+     * Wraps {@link PartyWorker#findPartyLatestTelecomNumber(String, Delegator)} to preserve the "latest record" semantics.
+     * @param ctx The DispatchContext that this service is operating in.
+     * @param context Map containing the input parameters.
+     * @return Map with the result of the service, containing the telecomNumber GenericValue when found.
+     */
+    public static Map<String, Object> getPartyLatestTelecomNumber(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        GenericValue telecomNumber = PartyWorker.findPartyLatestTelecomNumber(partyId, delegator);
+        if (telecomNumber != null) {
+            result.put("telecomNumber", telecomNumber);
+        }
+        return result;
+    }
+
+    /**
+     * Gets the latest PartyAndContactMech record for a party and contact mech type, regardless of purpose.
+     * Wraps {@link PartyWorker#findPartyLatestContactMech(String, String, Delegator)} to preserve the "latest record" semantics.
+     * @param ctx The DispatchContext that this service is operating in.
+     * @param context Map containing the input parameters.
+     * @return Map with the result of the service, containing the contactMech GenericValue when found.
+     */
+    public static Map<String, Object> getPartyLatestContactMech(DispatchContext ctx, Map<String, ? extends Object> context) {
+        Delegator delegator = ctx.getDelegator();
+        String partyId = (String) context.get("partyId");
+        String contactMechTypeId = (String) context.get("contactMechTypeId");
+        Map<String, Object> result = ServiceUtil.returnSuccess();
+        GenericValue contactMech = PartyWorker.findPartyLatestContactMech(partyId, contactMechTypeId, delegator);
+        if (contactMech != null) {
+            result.put("contactMech", contactMech);
+        }
+        return result;
+    }
 }

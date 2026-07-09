@@ -167,4 +167,21 @@ under the License.
         <description>Delete an existing ContactMech Type Purpose Record</description>
         <auto-attributes mode="IN" include="pk"/>
     </service>
+
+    <service name="getPartyContactMechList" engine="java"
+            location="org.apache.ofbiz.party.contact.ContactMechServices" invoke="getPartyContactMechList" auth="false">
+        <description>Get the list of ContactMech records for a party, optionally filtered by purpose and/or contact mech
+            type. Wraps ContactHelper.getContactMech so callers can obtain a party's contact mechs through the Service
+            Engine instead of a direct Java class reference. Ordered by fromDate DESC and, when includeOld is false,
+            limited to currently active records.</description>
+        <attribute name="partyId" type="String" mode="IN" optional="false">
+            <type-validate>
+                <fail-property resource="PartyErrorUiLabels" property="PartyRequiredFieldMissingPartyId"/>
+            </type-validate>
+        </attribute>
+        <attribute name="contactMechPurposeTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="contactMechTypeId" type="String" mode="IN" optional="true"/>
+        <attribute name="includeOld" type="Boolean" mode="IN" optional="true" default-value="false"/>
+        <attribute name="contactMechList" type="List" mode="OUT" optional="true"/>
+    </service>
 </services>
