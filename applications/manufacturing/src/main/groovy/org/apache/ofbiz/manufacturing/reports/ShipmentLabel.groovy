@@ -19,7 +19,7 @@
 package org.apache.ofbiz.manufacturing.reports
 
 import org.apache.ofbiz.entity.util.EntityUtil
-import org.apache.ofbiz.order.order.OrderReadHelper
+import org.apache.ofbiz.manufacturing.boundary.OrderGateway
 
 shipmentId = parameters.shipmentId
 shipment = from('Shipment').where('shipmentId', shipmentId).queryOne()
@@ -62,10 +62,10 @@ if (shipment) {
             // ---
             orderReadHelper = null
             if (orderReaders.containsKey(orderId)) {
-                orderReadHelper = (OrderReadHelper)orderReaders.get(orderId)
+                orderReadHelper = orderReaders.get(orderId)
             } else {
                 orderHeader = from('OrderHeader').where('orderId', orderId).queryOne()
-                orderReadHelper = new OrderReadHelper(orderHeader)
+                orderReadHelper = OrderGateway.makeOrderReadHelper(orderHeader)
                 orderReaders.put(orderId, orderReadHelper)
             }
             displayParty = orderReadHelper.getPlacingParty()

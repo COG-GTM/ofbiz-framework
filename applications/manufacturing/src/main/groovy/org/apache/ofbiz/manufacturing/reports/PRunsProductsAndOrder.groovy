@@ -21,6 +21,7 @@ package org.apache.ofbiz.manufacturing.reports
 // PRunsProductsAndOrder
 // ReportD
 
+import org.apache.ofbiz.manufacturing.boundary.OrderGateway
 import org.apache.ofbiz.manufacturing.jobshopmgt.ProductionRunHelper
 import org.apache.ofbiz.order.order.OrderReadHelper
 
@@ -46,7 +47,7 @@ if (allProductionRuns) {
         String rootProductionRunId = ProductionRunHelper.getRootProductionRun(delegator, productionRun.workEffortId)
 
         productionRunOrder = from('WorkOrderItemFulfillment').where('workEffortId', rootProductionRunId).queryFirst()
-        OrderReadHelper orh = new OrderReadHelper(delegator, productionRunOrder.orderId)
+        OrderReadHelper orh = OrderGateway.makeOrderReadHelper(delegator, productionRunOrder.orderId)
         location = from('ProductFacilityLocation').where('productId', productionRun.productId, 'facilityId', productionRun.facilityId).queryFirst()
 
         productionRunMap = [productionRun: productionRun,

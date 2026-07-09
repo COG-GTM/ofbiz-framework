@@ -38,6 +38,8 @@ import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
+import org.apache.ofbiz.manufacturing.boundary.OrderGateway;
+import org.apache.ofbiz.manufacturing.boundary.ProductGateway;
 import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
@@ -530,7 +532,8 @@ public class BOMServices {
                 return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
             }
             if (orderShipment != null && !orderReadHelpers.containsKey(orderShipment.getString("orderId"))) {
-                orderReadHelpers.put(orderShipment.getString("orderId"), new OrderReadHelper(delegator, orderShipment.getString("orderId")));
+                orderReadHelpers.put(orderShipment.getString("orderId"),
+                        OrderGateway.makeOrderReadHelper(delegator, orderShipment.getString("orderId")));
             }
             OrderReadHelper orderReadHelper = null;
             if (orderShipment != null) {
@@ -724,7 +727,7 @@ public class BOMServices {
                         // If needed, create the package
                         if (shipmentPackageSeqId == null) {
                             try {
-                                Map<String, Object> serviceResult = dispatcher.runSync("createShipmentPackage",
+                                Map<String, Object> serviceResult = ProductGateway.createShipmentPackage(dispatcher,
                                         UtilMisc.<String, Object>toMap("shipmentId", orderShipment.getString("shipmentId"), "shipmentBoxTypeId",
                                                 boxTypeId, "userLogin", userLogin));
                                 if (ServiceUtil.isError(serviceResult)) {
@@ -752,7 +755,7 @@ public class BOMServices {
                                         "userLogin", userLogin,
                                         "quantity", qty);
                             }
-                            Map<String, Object> serviceResult = dispatcher.runSync("createShipmentPackageContent", inputMap);
+                            Map<String, Object> serviceResult = ProductGateway.createShipmentPackageContent(dispatcher, inputMap);
                             if (ServiceUtil.isError(serviceResult)) {
                                 return ServiceUtil.returnError(UtilProperties.getMessage(RESOURCE, "ManufacturingPackageConfiguratorError", locale));
                             }

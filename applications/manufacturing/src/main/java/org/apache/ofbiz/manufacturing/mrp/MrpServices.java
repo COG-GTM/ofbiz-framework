@@ -43,6 +43,7 @@ import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtil;
 import org.apache.ofbiz.manufacturing.bom.BOMNode;
+import org.apache.ofbiz.manufacturing.boundary.ProductGateway;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -526,9 +527,10 @@ public class MrpServices {
         Map<String, Object> resultMap = null;
         try {
             if (facilityId == null) {
-                resultMap = dispatcher.runSync("getProductInventoryAvailable", UtilMisc.toMap("productId", productId));
+                resultMap = ProductGateway.getProductInventoryAvailable(dispatcher, UtilMisc.toMap("productId", productId));
             } else {
-                resultMap = dispatcher.runSync("getInventoryAvailableByFacility", UtilMisc.toMap("productId", productId, "facilityId", facilityId));
+                resultMap = ProductGateway.getInventoryAvailableByFacility(dispatcher,
+                        UtilMisc.toMap("productId", productId, "facilityId", facilityId));
             }
             if (ServiceUtil.isError(resultMap)) {
                 String errorMessage = ServiceUtil.getErrorMessage(resultMap);

@@ -21,8 +21,9 @@ package org.apache.ofbiz.manufacturing.reports
 // PackageContentsAndOrder
 // ReportB
 
-import org.apache.ofbiz.order.order.OrderReadHelper
+import org.apache.ofbiz.manufacturing.boundary.OrderGateway
 import org.apache.ofbiz.order.order.OrderContentWrapper
+import org.apache.ofbiz.order.order.OrderReadHelper
 
 if (productCategoryIdPar) {
     category = from('ProductCategory').where('productCategoryId', productCategoryIdPar).queryOne()
@@ -49,7 +50,7 @@ if (packageContents) {
         }
 
         if (!packagesMap.containsKey(packageContent.shipmentPackageSeqId)) {
-            OrderReadHelper orh = new OrderReadHelper(delegator, orderItem.orderId)
+            OrderReadHelper orh = OrderGateway.makeOrderReadHelper(delegator, orderItem.orderId)
             packagesMap.put(packageContent.shipmentPackageSeqId,
                     [packageId: packageContent.shipmentPackageSeqId,
                      party: orh.getPlacingParty(),
@@ -58,7 +59,7 @@ if (packageContents) {
                      orderShipment: orderShipment,
                      components: []])
         }
-        OrderContentWrapper orderContentWrapper = OrderContentWrapper.makeOrderContentWrapper(orderItem, request)
+        OrderContentWrapper orderContentWrapper = OrderGateway.makeOrderContentWrapper(orderItem, request)
         String imageUrl = orderContentWrapper.get('IMAGE_URL', 'url')
         packageMap = (Map) packagesMap.packageContent.shipmentPackageSeqId
         components = (List) packageMap.components

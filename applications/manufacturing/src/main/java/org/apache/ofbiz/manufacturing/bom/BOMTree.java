@@ -32,7 +32,7 @@ import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtil;
-import org.apache.ofbiz.product.store.ProductStoreWorker;
+import org.apache.ofbiz.manufacturing.boundary.ProductGateway;
 import org.apache.ofbiz.service.LocalDispatcher;
 
 /** It represents an (in-memory) bill of materials (in which each
@@ -342,7 +342,7 @@ public class BOMTree {
                     GenericValue order = EntityQuery.use(delegator).from("OrderHeader").where("orderId", orderId).queryOne();
                     String productStoreId = order.getString("productStoreId");
                     if (productStoreId != null) {
-                        GenericValue productStore = ProductStoreWorker.getProductStore(productStoreId, delegator);
+                        GenericValue productStore = ProductGateway.getProductStore(productStoreId, delegator);
                         if (productStore != null) {
                             facilityId = productStore.getString("inventoryFacilityId");
                         }
