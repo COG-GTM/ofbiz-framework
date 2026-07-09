@@ -19,7 +19,9 @@
 package org.apache.ofbiz.marketing.sfa
 
 import org.apache.ofbiz.entity.util.EntityUtil
-import org.apache.ofbiz.party.contact.ContactHelper
+import org.apache.ofbiz.marketing.party.PartyGateway
+
+partyGateway = PartyGateway.getInstance()
 
 contactInfoList = []
 partyIdFrom = parameters.partyIdFrom
@@ -32,7 +34,7 @@ if (partyIdFrom && partyIdTo) {
         person =  party.getRelatedOne('Person', false)
         contactDetailMap = [partyId: partyId, firstName: person.firstName, lastName: person.lastName]
 
-        generalContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'GENERAL_LOCATION', 'POSTAL_ADDRESS', false))
+        generalContactMech = EntityUtil.getFirst(partyGateway.getContactMech(party, 'GENERAL_LOCATION', 'POSTAL_ADDRESS', false))
         if (generalContactMech) {
             contactDetailMap.addrContactMechId = generalContactMech.contactMechId
             postalAddress = generalContactMech.getRelatedOne('PostalAddress', false)
@@ -50,12 +52,12 @@ if (partyIdFrom && partyIdTo) {
                 contactDetailMap.country = geo.geoName
             }
         }
-        emailContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'PRIMARY_EMAIL', 'EMAIL_ADDRESS', false))
+        emailContactMech = EntityUtil.getFirst(partyGateway.getContactMech(party, 'PRIMARY_EMAIL', 'EMAIL_ADDRESS', false))
         if (emailContactMech) {
             contactDetailMap.primaryEmail = emailContactMech.infoString
             contactDetailMap.emailContactMechId = emailContactMech.contactMechId
         }
-        phoneContactMech = EntityUtil.getFirst(ContactHelper.getContactMech(party, 'PRIMARY_PHONE', 'TELECOM_NUMBER', false))
+        phoneContactMech = EntityUtil.getFirst(partyGateway.getContactMech(party, 'PRIMARY_PHONE', 'TELECOM_NUMBER', false))
         if (phoneContactMech) {
             contactDetailMap.phoneContactMechId = phoneContactMech.contactMechId
             telecomNumber = phoneContactMech.getRelatedOne('TelecomNumber', false)

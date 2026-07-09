@@ -45,8 +45,7 @@ import org.apache.ofbiz.entity.condition.EntityCondition;
 import org.apache.ofbiz.entity.condition.EntityOperator;
 import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
-import org.apache.ofbiz.party.party.PartyHelper;
-import org.apache.ofbiz.party.party.PartyWorker;
+import org.apache.ofbiz.marketing.party.PartyGateway;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -67,6 +66,7 @@ import ezvcard.property.Telephone;
 public class VCard {
     private static final String MODULE = VCard.class.getName();
     private static final String RES_ERROR = "MarketingUiLabels";
+    private static final PartyGateway PARTY = PartyGateway.getInstance();
 
     /**
      * import a vcard from byteBuffer. the reader use is ez-vcard, see official site https://github.com/mangstadt/ez-vcard/
@@ -218,7 +218,7 @@ public class VCard {
                     createPartyIdentificationMap.put("partyId", resp.get("partyId"));
                     createPartyIdentificationMap.put("partyIdentificationTypeId", "VCARD_FN_ORIGIN");
                     createPartyIdentificationMap.put("idValue", formattedName.getValue());
-                    resp = dispatcher.runSync("createPartyIdentification", createPartyIdentificationMap);
+                    resp = PARTY.createPartyIdentification(dispatcher, createPartyIdentificationMap);
                     if (ServiceUtil.isError(resp)) {
                         return ServiceUtil.returnError(ServiceUtil.getErrorMessage(resp));
                     }
@@ -252,10 +252,10 @@ public class VCard {
                 }
                 vcard.setStructuredName(structuredName);
             }
-            String fullName = PartyHelper.getPartyName(delegator, partyId, false);
+            String fullName = PARTY.getPartyName(delegator, partyId, false);
             vcard.setFormattedName(fullName);
 
-            GenericValue postalAddress = PartyWorker.findPartyLatestPostalAddress(partyId, delegator);
+            GenericValue postalAddress = PARTY.findPartyLatestPostalAddress(partyId, delegator);
             if (postalAddress != null) {
                 Address address = new Address();
                 address.setStreetAddress(postalAddress.getString("address1"));
@@ -275,7 +275,7 @@ public class VCard {
                 vcard.addAddress(address);
             }
 
-            GenericValue telecomNumber = PartyWorker.findPartyLatestTelecomNumber(partyId, delegator);
+            GenericValue telecomNumber = PARTY.findPartyLatestTelecomNumber(partyId, delegator);
             if (telecomNumber != null) {
                 Telephone tel = new Telephone(telecomNumber.getString("areaCode") + telecomNumber.getString("contactNumber"));
                 tel.getTypes().add(TelephoneType.WORK);
@@ -283,7 +283,7 @@ public class VCard {
                 //TODO : this can be better set by checking contactMechPurposeTypeId
             }
 
-            GenericValue emailAddress = PartyWorker.findPartyLatestContactMech(partyId, "EMAIL_ADDRESS", delegator);
+            GenericValue emailAddress = PARTY.findPartyLatestContactMech(partyId, "EMAIL_ADDRESS", delegator);
             if (emailAddress != null && UtilValidate.isNotEmpty(emailAddress.getString("infoString"))) {
                 vcard.addEmail(new Email(emailAddress.getString("infoString")));
             }
