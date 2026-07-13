@@ -20,23 +20,12 @@ under the License.
 
 <entity-eca xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/entity-eca.xsd">
-    <!-- WorkEffort Keyword Indexing ECAs -->
-    <eca entity="WorkEffort" operation="create-store" event="return">
-        <action service="indexWorkEffortKeywords" mode="sync" value-attr="workEffortInstance"/>
-    </eca>
-    <eca entity="WorkEffortAttribute" operation="create-store" event="return">
-        <action service="indexWorkEffortKeywords" mode="sync"/>
-    </eca>
-    <eca entity="WorkEffortContent" operation="create-store" event="return">
-        <action service="indexWorkEffortKeywords" mode="sync"/>
-    </eca>
-    <!-- Content keyword indexing for the work effort content junction entity.
+
+    <!-- Content keyword indexing for the party content junction entity.
          Declared here (rather than in the content component) so that content
-         does not depend on workeffort entities; workeffort already depends on content. -->
-    <eca entity="WorkEffortContent" operation="create-store" event="return">
+         does not depend on party entities; party already depends on content. -->
+    <eca entity="PartyContent" operation="create-store" event="return">
         <action service="indexContentKeywords" mode="sync"/>
     </eca>
-    <eca entity="WorkEffortNote" operation="create-store" event="return">
-        <action service="indexWorkEffortKeywords" mode="sync"/>
-    </eca>
+
 </entity-eca>
