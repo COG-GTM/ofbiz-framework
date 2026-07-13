@@ -34,11 +34,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.GeneralException;
 import org.apache.ofbiz.base.util.GeneralRuntimeException;
-import org.apache.ofbiz.base.util.StringUtil;
 import org.apache.ofbiz.base.util.UtilDateTime;
 import org.apache.ofbiz.base.util.UtilHttp;
+import org.apache.ofbiz.base.util.UtilMisc;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
 import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
@@ -48,9 +49,14 @@ import org.apache.ofbiz.entity.util.EntityQuery;
 import org.apache.ofbiz.service.LocalDispatcher;
 
 /**
- * WorkEffortContentWrapper; gets work effort content for display
+ * PartyContentWrapper; gets party content for display.
+ *
+ * <p>Extends the shared {@link AbstractContentWrapper} content-access seam (owned by the
+ * {@code content} component) so the instance-level "fetch localized content for an entity"
+ * plumbing is not duplicated here. The existing public static helpers are preserved because
+ * external callers depend on them.</p>
  */
-public class PartyContentWrapper implements ContentWrapper {
+public class PartyContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = PartyContentWrapper.class.getName();
 
@@ -75,6 +81,55 @@ public class PartyContentWrapper implements ContentWrapper {
         this.mimeTypeId = ContentWrapper.getDefaultMimeTypeId(party.getDelegator());
     }
 
+    // ------------------------------------------------------------------
+    // AbstractContentWrapper hooks: party-specific metadata.
+    // ------------------------------------------------------------------
+
+    @Override
+    protected String getIdFieldName() {
+        return "partyId";
+    }
+
+    @Override
+    protected String getContentEntityName() {
+        return "PartyContent";
+    }
+
+    @Override
+    protected String getContentTypeFieldName() {
+        return "partyContentTypeId";
+    }
+
+    @Override
+    protected List<String> getCandidateFieldEntityNames() {
+        return UtilMisc.toList("PartyAndPerson", "PartyAndGroup");
+    }
+
+    @Override
+    protected UtilCache<String, String> getCache() {
+        return PARTY_CONTENT_CACHE;
+    }
+
+    @Override
+    protected GenericValue getEntityValue() {
+        return party;
+    }
+
+    @Override
+    protected Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    protected String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    protected LocalDispatcher getDispatcher() {
+        return dispatcher;
+    }
+
     /**
      * Get string.
      * @param contentTypeId the content type id
@@ -83,40 +138,7 @@ public class PartyContentWrapper implements ContentWrapper {
      * @return the string
      */
     public String get(String contentTypeId, boolean useCache, String encoderType) {
-        return getPartyContentAsText(party, contentTypeId, locale, mimeTypeId, party.getDelegator(), dispatcher, useCache, encoderType);
-    }
-
-    @Override
-    public StringUtil.StringWrapper get(String contentTypeId, String encoderType) {
-        return StringUtil.makeStringWrapper(get(contentTypeId, true, encoderType));
-    }
-
-    /**
-     * Gets id.
-     * @param contentTypeId the content type id
-     * @return the id
-     */
-    public String getId(String contentTypeId) {
-        GenericValue partyContent = getFirstPartyContentByType(null, party, contentTypeId, party.getDelegator());
-        if (partyContent != null) {
-            return partyContent.getString("contentId");
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Gets list.
-     * @param contentTypeId the content type id
-     * @return the list
-     */
-    public List<String> getList(String contentTypeId) {
-        try {
-            return getPartyContentTextList(party, contentTypeId, locale, mimeTypeId, party.getDelegator(), dispatcher);
-        } catch (GeneralException | IOException ioe) {
-            Debug.logError(ioe, MODULE);
-            return null;
-        }
+        return getContentAsText(contentTypeId, useCache, encoderType);
     }
 
     /**
