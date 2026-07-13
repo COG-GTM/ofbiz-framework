@@ -42,6 +42,16 @@ under the License.
         <action service="indexProductKeywords" mode="sync"/>
     </eca>
 
+    <!-- Content keyword indexing for product content junction entities.
+         Declared here (rather than in the content component) so that content
+         does not depend on product entities; product already depends on content. -->
+    <eca entity="ProductContent" operation="create-store" event="return">
+        <action service="indexContentKeywords" mode="sync"/>
+    </eca>
+    <eca entity="ProductCategoryContent" operation="create-store" event="return">
+        <action service="indexContentKeywords" mode="sync"/>
+    </eca>
+
     <!-- inventory related ECAs -->
     <eca entity="InventoryItem" operation="create-store" event="return">
         <condition field-name="productId" operator="is-not-empty"/>

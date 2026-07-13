@@ -42,20 +42,18 @@ under the License.
     <eca entity="ContentRole" operation="create-store" event="return">
         <action service="indexContentKeywords" mode="sync"/>
     </eca>
-    <eca entity="ProductContent" operation="create-store" event="return">
-        <action service="indexContentKeywords" mode="sync"/>
-    </eca>
-    <eca entity="ProductCategoryContent" operation="create-store" event="return">
-        <action service="indexContentKeywords" mode="sync"/>
-    </eca>
-    <eca entity="PartyContent" operation="create-store" event="return">
-        <action service="indexContentKeywords" mode="sync"/>
-    </eca>
     <eca entity="WebSiteContent" operation="create-store" event="return">
         <action service="indexContentKeywords" mode="sync"/>
     </eca>
-    <eca entity="WorkEffortContent" operation="create-store" event="return">
-        <action service="indexContentKeywords" mode="sync"/>
-    </eca>
+
+    <!--
+    Content keyword indexing for junction entities owned by other business modules
+    (ProductContent, ProductCategoryContent, PartyContent, WorkEffortContent) is
+    declared by those modules instead, so the content component does not reach out
+    to product/party/workeffort entities. The dependency is inverted: each business
+    module opts in to content keyword indexing (it already depends on content).
+    See applications/{product,party,workeffort}/entitydef/eecas.xml and
+    applications/content/README-integration-seams.md.
+    -->
 
 </entity-eca>
