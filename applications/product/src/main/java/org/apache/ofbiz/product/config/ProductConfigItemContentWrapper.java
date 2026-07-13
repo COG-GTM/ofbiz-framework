@@ -19,21 +19,22 @@
 package org.apache.ofbiz.product.config;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.GeneralException;
 import org.apache.ofbiz.base.util.StringUtil;
 import org.apache.ofbiz.base.util.StringUtil.StringWrapper;
 import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
 import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
@@ -47,7 +48,7 @@ import org.apache.ofbiz.service.ServiceContainer;
 /**
  * Product Config Item Content Worker: gets product content to display
  */
-public class ProductConfigItemContentWrapper implements ContentWrapper {
+public class ProductConfigItemContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = ProductConfigItemContentWrapper.class.getName();
 
@@ -93,6 +94,56 @@ public class ProductConfigItemContentWrapper implements ContentWrapper {
                 getDelegator(), getDispatcher(), encoderType));
     }
 
+    @Override
+    public String getIdFieldName() {
+        return "configItemId";
+    }
+
+    @Override
+    public String getContentEntityName() {
+        return "ProdConfItemContent";
+    }
+
+    @Override
+    public String getContentTypeFieldName() {
+        return "confItemContentTypeId";
+    }
+
+    @Override
+    public List<String> getCandidateFieldEntityNames() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public UtilCache<String, String> getCache() {
+        return CONFIG_ITEM_CONTENT_CACHE;
+    }
+
+    @Override
+    public GenericValue getEntityValue() {
+        return productConfigItem;
+    }
+
+    @Override
+    public Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    public String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    public String getEntityContextKey() {
+        return "productConfigItem";
+    }
+
+    @Override
+    public String getContentContextKey() {
+        return "productConfigItemContent";
+    }
+
     /**
      * Gets delegator.
      * @return the delegator
@@ -130,48 +181,12 @@ public class ProductConfigItemContentWrapper implements ContentWrapper {
 
     public static String getProductConfigItemContentAsText(GenericValue productConfigItem, String confItemContentTypeId, Locale locale,
                                                            String mimeTypeId, Delegator delegator, LocalDispatcher dispatcher, String encoderType) {
-        if (productConfigItem == null) {
-            return null;
-        }
-        /* Look for a previously cached entry (may also be an entry with null value if
-         * there was no content to retrieve)
-         */
-        String cacheKey = confItemContentTypeId + CACHE_KEY_SEPARATOR + locale + CACHE_KEY_SEPARATOR + mimeTypeId + CACHE_KEY_SEPARATOR
-                + productConfigItem.get("configItemId") + CACHE_KEY_SEPARATOR + encoderType + CACHE_KEY_SEPARATOR + delegator;
-        String cachedValue = CONFIG_ITEM_CONTENT_CACHE.get(cacheKey);
-        if (cachedValue != null || CONFIG_ITEM_CONTENT_CACHE.containsKey(cacheKey)) {
-            return cachedValue;
-        }
-
-        // Get content of given contentTypeId
-        boolean doCache = true;
-        String outString = null;
-
-        try {
-            Writer outWriter = new StringWriter();
-            // Use cache == true to have entity-cache managed content from cache while (not managed) rendered cache above
-            // may be configured with short expire time
-            getProductConfigItemContentAsText(null, productConfigItem, confItemContentTypeId, locale, mimeTypeId, delegator, dispatcher,
-                    outWriter, true);
-            outString = outWriter.toString();
-        } catch (GeneralException | IOException e) {
-            Debug.logError(e, "Error rendering ProdConfItemContent", MODULE);
-            doCache = false;
-        }
-
-        /* If we did not found any content (or got an error), get the content of a
-         * candidateFieldName matching the given contentTypeId
-         */
-        if (UtilValidate.isEmpty(outString)) {
-            outString = ContentWrapper.getCandidateFieldValue(productConfigItem, confItemContentTypeId);
-        }
-        // Encode found content via given encoderType
-        outString = ContentWrapper.encodeContentValue(outString, encoderType);
-
-        if (doCache) {
-            CONFIG_ITEM_CONTENT_CACHE.put(cacheKey, outString);
-        }
-        return outString;
+        // Delegates the shared cache/fallback/encode logic to AbstractContentWrapper; the
+        // entity-specific rendering stays in getProductConfigItemContentAsText(..., outWriter, ...).
+        return renderAndCacheContentAsText(CONFIG_ITEM_CONTENT_CACHE, productConfigItem, "configItemId", confItemContentTypeId,
+                locale, mimeTypeId, delegator, encoderType, "Error rendering ProdConfItemContent", MODULE,
+                outWriter -> getProductConfigItemContentAsText(null, productConfigItem, confItemContentTypeId, locale, mimeTypeId,
+                        delegator, dispatcher, outWriter, true));
     }
 
     public static void getProductConfigItemContentAsText(String configItemId, GenericValue productConfigItem, String confItemContentTypeId,

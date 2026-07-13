@@ -19,8 +19,8 @@
 package org.apache.ofbiz.product.product;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +34,7 @@ import org.apache.ofbiz.base.util.StringUtil;
 import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
 import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
@@ -45,7 +46,7 @@ import org.apache.ofbiz.service.LocalDispatcher;
 /**
  * Product Content Worker: gets product content to display
  */
-public class ProductContentWrapper implements ContentWrapper {
+public class ProductContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = ProductContentWrapper.class.getName();
 
@@ -85,6 +86,61 @@ public class ProductContentWrapper implements ContentWrapper {
                 null, this.product.getDelegator(), dispatcher, encoderType));
     }
 
+    @Override
+    public String getIdFieldName() {
+        return "productId";
+    }
+
+    @Override
+    public String getContentEntityName() {
+        return "ProductContent";
+    }
+
+    @Override
+    public String getContentTypeFieldName() {
+        return "productContentTypeId";
+    }
+
+    @Override
+    public List<String> getCandidateFieldEntityNames() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public UtilCache<String, String> getCache() {
+        return PRODUCT_CONTENT_CACHE;
+    }
+
+    @Override
+    public GenericValue getEntityValue() {
+        return product;
+    }
+
+    @Override
+    public Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    public String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    public LocalDispatcher getDispatcher() {
+        return dispatcher;
+    }
+
+    @Override
+    public String getEntityContextKey() {
+        return "product";
+    }
+
+    @Override
+    public String getContentContextKey() {
+        return "productContent";
+    }
+
     public static String getProductContentAsText(GenericValue product, String productContentTypeId, HttpServletRequest request, String encoderType) {
         LocalDispatcher dispatcher = (LocalDispatcher) request.getAttribute("dispatcher");
         String mimeTypeId = ContentWrapper.getDefaultMimeTypeId(product.getDelegator());
@@ -104,49 +160,13 @@ public class ProductContentWrapper implements ContentWrapper {
             return null;
         }
 
-        /*
-         * Look for a previously cached entry (may also be an entry with null value if
-         * there was no content to retrieve) caching: there is one cache created,
-         * "product.content.rendered" Each product's content is cached with a key of
-         * contentTypeId::locale::mimeType::productId, or whatever the CACHE_KEY_SEPARATOR is
-         * defined above to be.
-         */
-        String cacheKey = productContentTypeId + CACHE_KEY_SEPARATOR + locale + CACHE_KEY_SEPARATOR + mimeTypeId + CACHE_KEY_SEPARATOR
-                + product.get("productId") + CACHE_KEY_SEPARATOR + encoderType + CACHE_KEY_SEPARATOR + delegator;
-        String cachedValue = PRODUCT_CONTENT_CACHE.get(cacheKey);
-        if (cachedValue != null || PRODUCT_CONTENT_CACHE.containsKey(cacheKey)) {
-            return cachedValue;
-        }
-
-        // Get content of given contentTypeId
-        boolean doCache = true;
-        String outString = null;
-        try {
-            Writer outWriter = new StringWriter();
-            // Use cache == true to have entity-cache managed content from cache while (not managed) rendered cache above
-            // may be configured with short expire time
-            getProductContentAsText(null, product, productContentTypeId, locale, mimeTypeId, partyId, roleTypeId,
-                    delegator, dispatcher, outWriter, true);
-            outString = outWriter.toString();
-        } catch (GeneralException | IOException e) {
-            Debug.logError(e, "Error rendering ProductContent", MODULE);
-            doCache = false;
-        }
-
-        /*
-         * If we did not found any content (or got an error), get the content of a
-         * candidateFieldName matching the given contentTypeId
-         */
-        if (UtilValidate.isEmpty(outString)) {
-            outString = ContentWrapper.getCandidateFieldValue(product, productContentTypeId);
-        }
-        // Encode found content via given encoderType
-        outString = ContentWrapper.encodeContentValue(outString, encoderType);
-
-        if (doCache) {
-            PRODUCT_CONTENT_CACHE.put(cacheKey, outString);
-        }
-        return outString;
+        // Delegates the shared cache/fallback/encode logic to AbstractContentWrapper; the
+        // entity-specific rendering (incl. the variant/parent-product fallback) stays in
+        // getProductContentAsText(..., outWriter, ...).
+        return renderAndCacheContentAsText(PRODUCT_CONTENT_CACHE, product, "productId", productContentTypeId, locale, mimeTypeId,
+                delegator, encoderType, "Error rendering ProductContent", MODULE,
+                outWriter -> getProductContentAsText(null, product, productContentTypeId, locale, mimeTypeId, partyId, roleTypeId,
+                        delegator, dispatcher, outWriter, true));
     }
 
     public static void getProductContentAsText(String productId, GenericValue product, String productContentTypeId, Locale locale, String mimeTypeId,
