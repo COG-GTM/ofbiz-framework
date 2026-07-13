@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,8 +39,8 @@ import org.apache.ofbiz.base.util.UtilCodec;
 import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
-import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.entity.model.ModelEntity;
@@ -51,7 +52,7 @@ import org.apache.ofbiz.service.LocalDispatcher;
 /**
  * WorkEffortContentWrapper; gets work effort content for display
  */
-public class WorkEffortContentWrapper implements ContentWrapper {
+public class WorkEffortContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = WorkEffortContentWrapper.class.getName();
 
@@ -90,6 +91,61 @@ public class WorkEffortContentWrapper implements ContentWrapper {
     @Override
     public StringUtil.StringWrapper get(String contentTypeId, String encoderType) {
         return StringUtil.makeStringWrapper(get(contentTypeId, true, encoderType));
+    }
+
+    @Override
+    public String getIdFieldName() {
+        return "workEffortId";
+    }
+
+    @Override
+    public String getContentEntityName() {
+        return "WorkEffortContent";
+    }
+
+    @Override
+    public String getContentTypeFieldName() {
+        return "workEffortContentTypeId";
+    }
+
+    @Override
+    public List<String> getCandidateFieldEntityNames() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public UtilCache<String, String> getCache() {
+        return WORK_EFFORT_CONTENT_CACHE;
+    }
+
+    @Override
+    public GenericValue getEntityValue() {
+        return workEffort;
+    }
+
+    @Override
+    public Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    public String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    public LocalDispatcher getDispatcher() {
+        return dispatcher;
+    }
+
+    @Override
+    public String getEntityContextKey() {
+        return "workEffort";
+    }
+
+    @Override
+    public String getContentContextKey() {
+        return "workEffortContent";
     }
 
     /**

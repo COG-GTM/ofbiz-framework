@@ -21,7 +21,9 @@ package org.apache.ofbiz.order.order;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ import org.apache.ofbiz.base.util.StringUtil;
 import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
 import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
@@ -45,7 +48,7 @@ import org.apache.ofbiz.service.LocalDispatcher;
  * Order Content Worker: gets order content to display
  *
  */
-public class OrderContentWrapper implements ContentWrapper {
+public class OrderContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = OrderContentWrapper.class.getName();
 
@@ -79,6 +82,61 @@ public class OrderContentWrapper implements ContentWrapper {
     public StringUtil.StringWrapper get(String orderContentTypeId, String encoderType) {
         return StringUtil.makeStringWrapper(getOrderContentAsText(order, orderContentTypeId, locale, mimeTypeId, order.getDelegator(), dispatcher,
                 encoderType));
+    }
+
+    @Override
+    public String getIdFieldName() {
+        return "orderId";
+    }
+
+    @Override
+    public String getContentEntityName() {
+        return "OrderContent";
+    }
+
+    @Override
+    public String getContentTypeFieldName() {
+        return "orderContentTypeId";
+    }
+
+    @Override
+    public List<String> getCandidateFieldEntityNames() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public UtilCache<String, String> getCache() {
+        return ORDER_CONTENT_CACHE;
+    }
+
+    @Override
+    public GenericValue getEntityValue() {
+        return order;
+    }
+
+    @Override
+    public Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    public String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    public LocalDispatcher getDispatcher() {
+        return dispatcher;
+    }
+
+    @Override
+    public String getEntityContextKey() {
+        return "order";
+    }
+
+    @Override
+    public String getContentContextKey() {
+        return "orderContent";
     }
 
     public static String getOrderContentAsText(GenericValue order, String orderContentTypeId, HttpServletRequest request, String encoderType) {

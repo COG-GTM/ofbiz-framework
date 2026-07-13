@@ -39,6 +39,7 @@ import org.apache.ofbiz.base.util.UtilDateTime;
 import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilValidate;
 import org.apache.ofbiz.base.util.cache.UtilCache;
+import org.apache.ofbiz.content.content.AbstractContentWrapper;
 import org.apache.ofbiz.content.content.ContentWorker;
 import org.apache.ofbiz.content.content.ContentWrapper;
 import org.apache.ofbiz.entity.Delegator;
@@ -50,7 +51,7 @@ import org.apache.ofbiz.service.LocalDispatcher;
 /**
  * WorkEffortContentWrapper; gets work effort content for display
  */
-public class PartyContentWrapper implements ContentWrapper {
+public class PartyContentWrapper extends AbstractContentWrapper {
 
     private static final String MODULE = PartyContentWrapper.class.getName();
 
@@ -89,6 +90,61 @@ public class PartyContentWrapper implements ContentWrapper {
     @Override
     public StringUtil.StringWrapper get(String contentTypeId, String encoderType) {
         return StringUtil.makeStringWrapper(get(contentTypeId, true, encoderType));
+    }
+
+    @Override
+    public String getIdFieldName() {
+        return "partyId";
+    }
+
+    @Override
+    public String getContentEntityName() {
+        return "PartyContent";
+    }
+
+    @Override
+    public String getContentTypeFieldName() {
+        return "partyContentTypeId";
+    }
+
+    @Override
+    public List<String> getCandidateFieldEntityNames() {
+        return List.of("PartyAndPerson", "PartyAndGroup");
+    }
+
+    @Override
+    public UtilCache<String, String> getCache() {
+        return PARTY_CONTENT_CACHE;
+    }
+
+    @Override
+    public GenericValue getEntityValue() {
+        return party;
+    }
+
+    @Override
+    public Locale getLocale() {
+        return locale;
+    }
+
+    @Override
+    public String getMimeTypeId() {
+        return mimeTypeId;
+    }
+
+    @Override
+    public LocalDispatcher getDispatcher() {
+        return dispatcher;
+    }
+
+    @Override
+    public String getEntityContextKey() {
+        return "party";
+    }
+
+    @Override
+    public String getContentContextKey() {
+        return "partyContent";
     }
 
     /**
