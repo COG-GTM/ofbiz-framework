@@ -51,8 +51,9 @@ import org.apache.ofbiz.base.util.UtilHttp;
 import org.apache.ofbiz.base.util.UtilMisc;
 import org.apache.ofbiz.base.util.UtilProperties;
 import org.apache.ofbiz.base.util.UtilValidate;
+import org.apache.ofbiz.common.content.DataResourceContentProvider;
+import org.apache.ofbiz.common.content.DataResourceContentProviderFactory;
 import org.apache.ofbiz.common.email.NotificationServices;
-import org.apache.ofbiz.content.data.DataResourceWorker;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
@@ -135,11 +136,12 @@ public class CommunicationEventServices {
                     bodyParts.add(UtilMisc.<String, Object>toMap("content", communicationEvent.getString("content"), "type",
                             communicationEvent.getString("contentMimeTypeId")));
                 }
+                DataResourceContentProvider dataResourceContentProvider = DataResourceContentProviderFactory.getProvider();
                 for (GenericValue comEventContent : comEventContents) {
                     GenericValue content = comEventContent.getRelatedOne("FromContent", false);
                     GenericValue dataResource = content.getRelatedOne("DataResource", false);
-                    ByteBuffer dataContent = DataResourceWorker.getContentAsByteBuffer(delegator, dataResource.getString("dataResourceId"),
-                            null, null, locale, null);
+                    ByteBuffer dataContent = dataResourceContentProvider.getContentAsByteBuffer(delegator,
+                            dataResource.getString("dataResourceId"), null, null, locale, null);
                     bodyParts.add(UtilMisc.<String, Object>toMap("content", dataContent.array(), "type", dataResource.getString("mimeTypeId"),
                             "filename", dataResource.getString("dataResourceName")));
                 }
