@@ -19,7 +19,7 @@
 -->
 <entity-engine-xml>
     <SystemProperty systemResourceId="general" systemPropertyId="ORGANIZATION_PARTY" systemPropertyValue="Company" description="the default organizationPartyId for used in dropdowns and reports"/>
-    <SystemProperty systemResourceId="general" systemPropertyId="VISUAL_THEME" systemPropertyValue="RAINBOWSTONE_SAPHIR" description="ID of the VisualTheme to use if there is no VISUAL_THEME UserPreference record for the current user (ie default value)"/>
+    <SystemProperty systemResourceId="general" systemPropertyId="VISUAL_THEME" systemPropertyValue="TYSON" description="ID of the VisualTheme to use if there is no VISUAL_THEME UserPreference record for the current user (ie default value)"/>
     <SystemProperty systemResourceId="general" systemPropertyId="currency.uom.id.default" systemPropertyValue="USD" description="The default currency to use for prices, etc"/>
     <SystemProperty systemResourceId="general" systemPropertyId="country.geo.id.default" systemPropertyValue="USA" description="the default country for drop downs"/>
     <SystemProperty systemResourceId="general" systemPropertyId="partner.trackingCodeId.default" description="the default trackingCodeId to use for Partner Managed Tracking Codes"/>
@@ -36,19 +36,19 @@
     <SystemProperty systemResourceId="general" systemPropertyId="mail.smtp.sendpartial" systemPropertyValue="true" description="setting this property to false will abort sending the message"/>
     <SystemProperty systemResourceId="general" systemPropertyId="telecom.notifications.enabled" systemPropertyValue="N" description="Telecom notifications enabled (Y|N)"/>
 
-    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.create" systemPropertyValue="Y" 
+    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.create" systemPropertyValue="Y"
     description="Whether CustomTimePeriod records are created automatically. Options: Y, N"
     />
 
-    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.applType" systemPropertyValue="FISCAL" 
+    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.applType" systemPropertyValue="FISCAL"
     description="list of one or more period application types"
     />
 
-    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.FISCAL.grain" systemPropertyValue="MONTH" 
+    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.FISCAL.grain" systemPropertyValue="MONTH"
     description="Lowest granularity of fiscal CustomTimePeriod records to be created. Options: See PeriodType records"
     />
 
-    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.FISCAL.intermediate" systemPropertyValue="N" 
+    <SystemProperty systemResourceId="general" systemPropertyId="CustomTimePeriod.FISCAL.intermediate" systemPropertyValue="N"
     description="Whether intermediate between highest (YEAR) and lowest must be recreated for the type. Options: Y, N"
     />
 
