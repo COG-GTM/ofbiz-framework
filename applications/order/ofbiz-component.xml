@@ -47,6 +47,7 @@ under the License.
     <service-resource type="model" loader="main" location="servicedef/services_checkout.xml"/>
     <service-resource type="model" loader="main" location="servicedef/services_perm.xml"/>
     <service-resource type="model" loader="main" location="servicedef/services_upgrade.xml"/>
+    <service-resource type="model" loader="main" location="servicedef/services_shipreadiness.xml"/>
     <service-resource type="eca" loader="main" location="servicedef/secas.xml"/>
 
     <test-suite loader="main" location="testdef/FinAccountTests.xml"/>
@@ -55,6 +56,7 @@ under the License.
     <test-suite loader="main" location="testdef/QuoteTests.xml"/>
     <test-suite loader="main" location="testdef/ShoppingListTests.xml"/>
     <test-suite loader="main" location="testdef/ShoppingCartTests.xml"/>
+    <test-suite loader="main" location="testdef/OrderShipReadinessTests.xml"/>
 
     <webapp name="order"
         title="Order"
