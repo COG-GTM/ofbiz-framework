@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<entity-engine-xml>
+    <!-- Product, facility and inventory: 10 available to promise in TEST_SHIPRDY_FAC -->
+    <Product productId="TEST_SHIPRDY_PROD" productTypeId="FINISHED_GOOD" internalName="Ship Readiness Test Product" isVirtual="N" isVariant="N"/>
+    <Facility facilityId="TEST_SHIPRDY_FAC" facilityTypeId="WAREHOUSE" facilityName="Ship Readiness Test Warehouse" defaultInventoryItemTypeId="NON_SERIAL_INV_ITEM"/>
+    <InventoryItem inventoryItemId="TEST_SHIPRDY_INV1" inventoryItemTypeId="NON_SERIAL_INV_ITEM" productId="TEST_SHIPRDY_PROD" facilityId="TEST_SHIPRDY_FAC"
+            datetimeReceived="2020-01-01 00:00:00.0" quantityOnHandTotal="10.0" availableToPromiseTotal="10.0"/>
+
+    <!-- Order with ship group 00001 (with facility) and ship group 00002 (without facility) -->
+    <OrderHeader orderId="TEST_SHIPRDY_ORD1" orderTypeId="SALES_ORDER" externalId="TEST_SHIPRDY_EXT1" orderDate="2020-01-01 00:00:00.0" entryDate="2020-01-01 00:00:00.0" statusId="ORDER_APPROVED" currencyUom="USD"/>
+    <OrderItemShipGroup orderId="TEST_SHIPRDY_ORD1" shipGroupSeqId="00001" facilityId="TEST_SHIPRDY_FAC" maySplit="N" isGift="N"/>
+    <OrderItemShipGroup orderId="TEST_SHIPRDY_ORD1" shipGroupSeqId="00002" maySplit="N" isGift="N"/>
+
+    <!-- 00001: fully reserved -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00001" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="3.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00001" shipGroupSeqId="00001" quantity="3.0"/>
+    <OrderItemShipGrpInvRes orderId="TEST_SHIPRDY_ORD1" shipGroupSeqId="00001" orderItemSeqId="00001" inventoryItemId="TEST_SHIPRDY_INV1" quantity="3.0" quantityNotAvailable="0.0" reservedDatetime="2020-01-01 00:00:00.0"/>
+
+    <!-- 00002: reserved but partly backordered -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00002" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="4.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00002" shipGroupSeqId="00001" quantity="4.0"/>
+    <OrderItemShipGrpInvRes orderId="TEST_SHIPRDY_ORD1" shipGroupSeqId="00001" orderItemSeqId="00002" inventoryItemId="TEST_SHIPRDY_INV1" quantity="4.0" quantityNotAvailable="2.0" reservedDatetime="2020-01-01 00:00:00.0"/>
+
+    <!-- 00003: no reservation, 6 ordered minus 1 cancelled = 5 to ship, enough facility ATP -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00003" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="6.0" cancelQuantity="1.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00003" shipGroupSeqId="00001" quantity="6.0" cancelQuantity="1.0"/>
+
+    <!-- 00004: no reservation, not enough facility ATP -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00004" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="20.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00004" shipGroupSeqId="00001" quantity="20.0"/>
+
+    <!-- 00005: no reservation, ship group without facility -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00005" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="1.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00005" shipGroupSeqId="00002" quantity="1.0"/>
+
+    <!-- 00006: no product -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00006" orderItemTypeId="WORK_ORDER_ITEM" itemDescription="Ship Readiness Test Work Item" quantity="1.0" unitPrice="1.0" statusId="ITEM_APPROVED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00006" shipGroupSeqId="00001" quantity="1.0"/>
+
+    <!-- 00007: cancelled -->
+    <OrderItem orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00007" orderItemTypeId="PRODUCT_ORDER_ITEM" productId="TEST_SHIPRDY_PROD" quantity="2.0" cancelQuantity="2.0" unitPrice="1.0" statusId="ITEM_CANCELLED"/>
+    <OrderItemShipGroupAssoc orderId="TEST_SHIPRDY_ORD1" orderItemSeqId="00007" shipGroupSeqId="00001" quantity="2.0" cancelQuantity="2.0"/>
+
+    <!-- User without any security group, so without ORDERMGR_VIEW -->
+    <UserLogin userLoginId="TEST_SHIPRDY_NOPERM" enabled="Y"/>
+</entity-engine-xml>
