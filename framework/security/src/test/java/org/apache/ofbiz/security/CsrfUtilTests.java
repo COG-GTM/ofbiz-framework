@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -207,7 +209,14 @@ public class CsrfUtilTests {
         requestMapElement.setAttribute("uri", "entity/find/{entityName}");
         ConfigXMLReader.RequestMap entityFind = new ConfigXMLReader.RequestMap(requestMapElement);
 
-        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>();
+        AtomicInteger scans = new AtomicInteger();
+        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>() {
+            @Override
+            public Set<Map.Entry<String, ConfigXMLReader.RequestMap>> entrySet() {
+                scans.incrementAndGet();
+                return super.entrySet();
+            }
+        };
         requestMapMap.put(checkLogin.getUri(), checkLogin);
         requestMapMap.put(entityFind.getUri(), entityFind);
 
@@ -217,6 +226,7 @@ public class CsrfUtilTests {
         assertEquals(entityFind, CsrfUtil.findRequestMap(requestMapMap, "entity/find/Party"));
         assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
         assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
+        assertEquals(3, scans.get());
 
         Map<String, ConfigXMLReader.RequestMap> otherRequestMapMap = new HashMap<>();
         otherRequestMapMap.put(entityFind.getUri(), entityFind);
