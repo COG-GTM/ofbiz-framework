@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -195,6 +197,72 @@ public class CsrfUtilTests {
         requestMap = CsrfUtil.findRequestMap(requestMapMap, "/view/ModelInduceFromDb");
         assertEquals(requestMap.getUri(), "view");
 
+    }
+
+    @Test
+    public void testFindRequestMapReusesLookupsOnlyForSameRequestMapMap() throws ParserConfigurationException {
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "checkLogin");
+        ConfigXMLReader.RequestMap checkLogin = new ConfigXMLReader.RequestMap(requestMapElement);
+        requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "entity/find/{entityName}");
+        ConfigXMLReader.RequestMap entityFind = new ConfigXMLReader.RequestMap(requestMapElement);
+
+        AtomicInteger scans = new AtomicInteger();
+        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>() {
+            @Override
+            public Set<Map.Entry<String, ConfigXMLReader.RequestMap>> entrySet() {
+                scans.incrementAndGet();
+                return super.entrySet();
+            }
+        };
+        requestMapMap.put(checkLogin.getUri(), checkLogin);
+        requestMapMap.put(entityFind.getUri(), entityFind);
+
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "/checkLogin?foo=bar"));
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(requestMapMap, "/entity/find/Party"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(requestMapMap, "entity/find/Party"));
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
+        assertEquals(3, scans.get());
+
+        Map<String, ConfigXMLReader.RequestMap> otherRequestMapMap = new HashMap<>();
+        otherRequestMapMap.put(entityFind.getUri(), entityFind);
+        assertNull(CsrfUtil.findRequestMap(otherRequestMapMap, "checkLogin"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(otherRequestMapMap, "entity/find/Party"));
+    }
+
+    @Test
+    public void testFindRequestMapForgetsLookupsOnceFull() throws ParserConfigurationException {
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "checkLogin");
+        ConfigXMLReader.RequestMap checkLogin = new ConfigXMLReader.RequestMap(requestMapElement);
+
+        AtomicInteger scans = new AtomicInteger();
+        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>() {
+            @Override
+            public Set<Map.Entry<String, ConfigXMLReader.RequestMap>> entrySet() {
+                scans.incrementAndGet();
+                return super.entrySet();
+            }
+        };
+        requestMapMap.put(checkLogin.getUri(), checkLogin);
+
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        for (int i = 0; i < 999; i++) {
+            assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown" + i));
+        }
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1000, scans.get());
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown999"));
+        assertEquals(1001, scans.get());
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1002, scans.get());
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1002, scans.get());
     }
 
     @Test

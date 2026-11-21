@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.apache.ofbiz.security;
 
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -46,6 +47,8 @@ import org.apache.ofbiz.webapp.control.WebAppConfigurationException;
 public final class CsrfUtil {
 
     private static final String MODULE = CsrfUtil.class.getName();
+    private static final ThreadLocal<RequestMapLookups> REQUEST_MAP_LOOKUPS = new ThreadLocal<>();
+    private static final int MAX_REMEMBERED_LOOKUPS = 1000;
     private static String tokenNameNonAjax = UtilProperties.getPropertyValue("security", "csrf.tokenName.nonAjax", "csrf");
     private static ICsrfDefenseStrategy strategy;
     private static String strategyCanonicalName;
@@ -236,6 +239,37 @@ public final class CsrfUtil {
         if (charPos != -1) {
             path = path.substring(0, charPos);
         }
+        RequestMapLookups lookups = REQUEST_MAP_LOOKUPS.get();
+        if (lookups == null || lookups.requestMapMap.get() != requestMapMap) {
+            lookups = new RequestMapLookups(requestMapMap);
+            REQUEST_MAP_LOOKUPS.set(lookups);
+        }
+        if (lookups.byPath.containsKey(path)) {
+            return lookups.byPath.get(path);
+        }
+        ConfigXMLReader.RequestMap requestMap = scanRequestMaps(requestMapMap, path);
+        if (lookups.byPath.size() >= MAX_REMEMBERED_LOOKUPS) {
+            lookups.byPath.clear();
+        }
+        lookups.byPath.put(path, requestMap);
+        return requestMap;
+    }
+
+    /**
+     * Remembers, for the request map map of the request being rendered on this thread, which request map
+     * each path resolved to, so pages with many links scan the request maps once per distinct path.
+     */
+    private static final class RequestMapLookups {
+        private final WeakReference<Map<String, ConfigXMLReader.RequestMap>> requestMapMap;
+        private final Map<String, ConfigXMLReader.RequestMap> byPath = new HashMap<>();
+
+        private RequestMapLookups(Map<String, ConfigXMLReader.RequestMap> requestMapMap) {
+            this.requestMapMap = new WeakReference<>(requestMapMap);
+        }
+    }
+
+    private static ConfigXMLReader.RequestMap scanRequestMaps(Map<String, ConfigXMLReader.RequestMap> requestMapMap,
+            String path) {
         MultivaluedHashMap<String, String> vars = new MultivaluedHashMap<>();
         for (Map.Entry<String, ConfigXMLReader.RequestMap> entry : requestMapMap.entrySet()) {
             URITemplate uriTemplate = URITemplate.createExactTemplate(entry.getKey());
