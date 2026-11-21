@@ -198,6 +198,33 @@ public class CsrfUtilTests {
     }
 
     @Test
+    public void testFindRequestMapReusesLookupsOnlyForSameRequestMapMap() throws ParserConfigurationException {
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "checkLogin");
+        ConfigXMLReader.RequestMap checkLogin = new ConfigXMLReader.RequestMap(requestMapElement);
+        requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "entity/find/{entityName}");
+        ConfigXMLReader.RequestMap entityFind = new ConfigXMLReader.RequestMap(requestMapElement);
+
+        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>();
+        requestMapMap.put(checkLogin.getUri(), checkLogin);
+        requestMapMap.put(entityFind.getUri(), entityFind);
+
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "/checkLogin?foo=bar"));
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(requestMapMap, "/entity/find/Party"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(requestMapMap, "entity/find/Party"));
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown"));
+
+        Map<String, ConfigXMLReader.RequestMap> otherRequestMapMap = new HashMap<>();
+        otherRequestMapMap.put(entityFind.getUri(), entityFind);
+        assertNull(CsrfUtil.findRequestMap(otherRequestMapMap, "checkLogin"));
+        assertEquals(entityFind, CsrfUtil.findRequestMap(otherRequestMapMap, "entity/find/Party"));
+    }
+
+    @Test
     public void testGenerateTokenForAjax() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpSession session = mock(HttpSession.class);
