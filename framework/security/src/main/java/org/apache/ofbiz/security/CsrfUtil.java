@@ -48,6 +48,7 @@ public final class CsrfUtil {
 
     private static final String MODULE = CsrfUtil.class.getName();
     private static final ThreadLocal<RequestMapLookups> REQUEST_MAP_LOOKUPS = new ThreadLocal<>();
+    private static final int MAX_REMEMBERED_LOOKUPS = 1000;
     private static String tokenNameNonAjax = UtilProperties.getPropertyValue("security", "csrf.tokenName.nonAjax", "csrf");
     private static ICsrfDefenseStrategy strategy;
     private static String strategyCanonicalName;
@@ -247,6 +248,9 @@ public final class CsrfUtil {
             return lookups.byPath.get(path);
         }
         ConfigXMLReader.RequestMap requestMap = scanRequestMaps(requestMapMap, path);
+        if (lookups.byPath.size() >= MAX_REMEMBERED_LOOKUPS) {
+            lookups.byPath.clear();
+        }
         lookups.byPath.put(path, requestMap);
         return requestMap;
     }
