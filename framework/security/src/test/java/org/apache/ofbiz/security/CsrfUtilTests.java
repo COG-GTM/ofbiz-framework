@@ -235,6 +235,34 @@ public class CsrfUtilTests {
     }
 
     @Test
+    public void testFindRequestMapForgetsLookupsOnceFull() throws ParserConfigurationException {
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element requestMapElement = doc.createElement("request-map");
+        requestMapElement.setAttribute("uri", "checkLogin");
+        ConfigXMLReader.RequestMap checkLogin = new ConfigXMLReader.RequestMap(requestMapElement);
+
+        AtomicInteger scans = new AtomicInteger();
+        Map<String, ConfigXMLReader.RequestMap> requestMapMap = new HashMap<>() {
+            @Override
+            public Set<Map.Entry<String, ConfigXMLReader.RequestMap>> entrySet() {
+                scans.incrementAndGet();
+                return super.entrySet();
+            }
+        };
+        requestMapMap.put(checkLogin.getUri(), checkLogin);
+
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        for (int i = 0; i < 1000; i++) {
+            assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown" + i));
+        }
+        assertEquals(1001, scans.get());
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1002, scans.get());
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1002, scans.get());
+    }
+
+    @Test
     public void testGenerateTokenForAjax() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpSession session = mock(HttpSession.class);
