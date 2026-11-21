@@ -252,9 +252,12 @@ public class CsrfUtilTests {
         requestMapMap.put(checkLogin.getUri(), checkLogin);
 
         assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 999; i++) {
             assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown" + i));
         }
+        assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
+        assertEquals(1000, scans.get());
+        assertNull(CsrfUtil.findRequestMap(requestMapMap, "unknown999"));
         assertEquals(1001, scans.get());
         assertEquals(checkLogin, CsrfUtil.findRequestMap(requestMapMap, "checkLogin"));
         assertEquals(1002, scans.get());
